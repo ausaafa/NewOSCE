@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PharmacyPrep AI Patient Simulator</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: #f0f0ee;
+  color: #111;
+  display: flex;
+  flex-direction: column;
+}
+body {
+  flex: 1;
+}
+    .refs-tab {
+  padding:6px 10px;
+  border-radius:7px;
+  border:1px solid rgba(0,0,0,.15);
+  background:#fff;
+  font-family:inherit;
+  font-size:.72rem;
+  font-weight:700;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+
+.refs-tab.active {
+  background:#111;
+  color:#fff;
+  border-color:#111;
+}
+    /* ══════════════════════════════
+       NAV
+    ══════════════════════════════ */
+    nav {
+      height: 56px;
+      background: #fff;
+      border-bottom: 1px solid rgba(0,0,0,.1);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .nav-logo { display:flex; align-items:center; gap:9px; }
+    .nav-logo-icon {
+      width:34px; height:34px;
+      background:linear-gradient(135deg,#111,#444);
+      border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:17px;
+    }
+    .nav-logo-title { font-weight:700; font-size:.95rem; display:block; }
+    .nav-logo-sub   { font-size:.72rem; color:#888; display:block; }
+    .nav-center {
+      position:absolute; left:50%; transform:translateX(-50%);
+      font-size:1.1rem; font-weight:700; letter-spacing:-.02em; white-space:nowrap;
+    }
+    .nav-spacer { flex:1; }
+    .nav-btn {
+      padding:7px 15px; border-radius:8px;
+      border:1px solid rgba(0,0,0,.18); background:#fff;
+      font-family:inherit; font-size:.85rem; font-weight:600; cursor:pointer; transition:background .15s;
+    }
+    .nav-btn:hover { background:#f5f5f5; }
+
+    /* ══════════════════════════════
+       PAGE SHELL
+    ══════════════════════════════ */
+    .shell {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 56px);
+      overflow: hidden;
+    }
+
+    /* ══════════════════════════════
+       3-COLUMN ROW  20 / 55 / 25
+    ══════════════════════════════ */
+    .columns {
+      flex: 1;
+      min-height: 0;
+      height: 0;           /* critical — forces children to respect flex bounds */
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Column base ── */
+    .col {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* ── Col 1: Controls sidebar (20%) ── */
+    .col-controls {
+      flex: 0 0 20%;
+      background: #fff;
+      border-right: 1px solid rgba(0,0,0,.1);
+      padding: 16px 14px;
+      gap: 0;
+    }
+
+    /* PATCHED: flex:1 so buttons share all remaining space equally at ANY zoom */
+    .sb-action { flex: 1; min-height: 0; display:flex; flex-direction:column; }
+
+    /* PATCHED: flex:0 0 auto so case block is only as tall as its content */
+    .sb-case-block { flex: 0 0 auto; display:flex; flex-direction:column; gap:8px; }
+
+    /* ── Col 2: Chat (55%) ── */
+    .col-chat {
+      flex: 0 0 55%;
+      background: #fff;
+      border-right: 1px solid rgba(0,0,0,.1);
+      padding: 14px 16px;
+      gap: 12px;
+    }
+
+    /* ── Col 3: References (25%) ── */
+    .col-refs {
+      flex: 0 0 25%;
+      background: #fafaf8;
+      padding: 16px 14px;
+      gap: 12px;
+    }
+
+    /* ══════════════════════════════
+       SIDEBAR COMPONENTS (Col 1)
+    ══════════════════════════════ */
+    .sb-label {
+      font-size:.67rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.09em; color:#999; margin-bottom:7px; flex-shrink:0;
+    }
+    .sb-hr { border:none; border-top:1px solid rgba(0,0,0,.09); margin:10px 0; flex-shrink:0; }
+    .sb-fixed { flex-shrink:0; display:flex; flex-direction:column; }
+    .sb-grow  { flex:1; min-height:0; display:flex; flex-direction:column; }
+
+    select {
+      width:100%; padding:10px 12px;
+      border:1px solid rgba(0,0,0,.18); border-radius:9px;
+      background:#f7f7f5; font-family:inherit; font-size:.86rem; color:#111;
+      cursor:pointer; appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 12 12'%3E%3Cpath fill='%23777' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 11px center; padding-right:30px;
+      margin-bottom:8px;
+    }
+    select:last-of-type { margin-bottom:0; }
+    select:focus { outline:none; border-color:#555; }
+
+    .upload-zone {
+      border:2px dashed rgba(0,0,0,.2); border-radius:9px; padding:13px;
+      background:#f7f7f5; text-align:center; cursor:pointer;
+      font-size:.84rem; color:#333; transition:all .2s; line-height:1.45;
+    }
+    .upload-zone:hover { background:#fff; border-color:#777; }
+    .upload-zone small { display:block; color:#999; font-size:.76rem; margin-top:3px; }
+    input[type="file"] { display:none !important; }
+
+    .sb-toggle {
+      width:100%; padding:12px 14px; border-radius:10px;
+      border:1px solid rgba(0,0,0,.15); background:#f2f2f0;
+      font-family:inherit; font-size:.88rem; font-weight:600;
+      cursor:pointer; text-align:left; display:flex; align-items:center; gap:9px;
+      transition:background .18s; color:#111; flex-shrink:0;
+    }
+    .sb-toggle:hover { background:#e8e8e5; }
+
+.sb-btn {
+  width:100%;
+  flex:1;
+  border-radius:10px;
+  border:none;
+  font-family:inherit;
+  font-size:.97rem;
+  font-weight:700;              /* ✅ Bold */
+  cursor:pointer;
+  transition:all .18s;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;       /* ✅ Center text horizontally */
+  text-align:center;            /* ✅ Center text alignment */
+  padding:0 16px;
+}
+    .sb-btn.dark  { background:linear-gradient(135deg,#111,#444); color:#fff; box-shadow:0 3px 12px rgba(0,0,0,.2); }
+    .sb-btn.dark:hover:not(:disabled)  { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.25); }
+    .sb-btn.light { background:linear-gradient(135deg,#111,#444); color:#fff; box-shadow:0 3px 12px rgba(0,0,0,.2); }
+    .sb-btn.light:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.25); }
+    .sb-btn:disabled { opacity:.4; cursor:not-allowed; transform:none !important; }
+
+    .sb-status {
+      font-size:.77rem; color:#888; padding:7px 9px;
+      background:#f7f7f5; border-radius:8px; border:1px solid rgba(0,0,0,.09);
+      line-height:1.45; flex-shrink:0;
+    }
+
+    /* ══════════════════════════════
+       CHAT COMPONENTS (Col 2)
+    ══════════════════════════════ */
+    #micBtn {
+      width:100%; height:74px; flex-shrink:0;
+      background:linear-gradient(90deg,#111,#333); color:#fff;
+      font-family:inherit; font-weight:700; font-size:1.08rem;
+      border:none; border-radius:13px; cursor:pointer;
+      box-shadow:0 4px 16px rgba(0,0,0,.18); transition:all .25s; letter-spacing:-.01em;
+    }
+    #micBtn:hover:not(:disabled) { transform:translateY(-1.5px); box-shadow:0 8px 24px rgba(0,0,0,.22); }
+    #micBtn.active   { background:linear-gradient(90deg,#ff1744,#ff9100); animation:pulse 1.2s infinite; }
+    #micBtn.speaking { background:linear-gradient(90deg,#ff8a00,#ff1744); }
+    #micBtn:disabled { opacity:.45; cursor:not-allowed; transform:none !important; }
+
+    @keyframes pulse {
+      0%   { box-shadow:0 0 0 0   rgba(255,23,68,.45); }
+      70%  { box-shadow:0 0 0 16px rgba(255,23,68,0);  }
+      100% { box-shadow:0 0 0 0   rgba(255,23,68,0);   }
+    }
+    .icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .icon {
+  stroke-width: 2;
+}
+    .chat-box {
+      flex:1; min-height:0;
+      border:1px solid rgba(0,0,0,.1); border-radius:13px;
+      background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.06);
+      display:flex; flex-direction:column; overflow:hidden;
+    }
+    .messages {
+      flex:1; overflow-y:auto; padding:16px; scroll-behavior:smooth;
+    }
+    .messages::-webkit-scrollbar { width:4px; }
+    .messages::-webkit-scrollbar-thumb { background:#ddd; border-radius:4px; }
+    .msg { display:flex; margin:7px 0; }
+    .msg.user { justify-content:flex-end; }
+    .msg.ai   { justify-content:flex-start; }
+    .bubble {
+      max-width:min(82%,520px); padding:10px 14px; border-radius:13px;
+      line-height:1.5; white-space:pre-wrap; word-wrap:break-word; font-size:.92rem;
+    }
+    .msg.ai   .bubble { background:rgba(0,0,0,.86); color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+    .msg.user .bubble { background:#f2f2f0; color:#111; border:1px solid rgba(0,0,0,.1); }
+
+    /* ══════════════════════════════
+       REFERENCES PANEL (Col 3)
+    ══════════════════════════════ */
+    .refs-header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:10px; flex-shrink:0;
+    }
+    .refs-title {
+      font-size:.78rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.09em; color:#999;
+    }
+    .refs-add-btn {
+      padding:5px 11px; border-radius:7px; border:1px solid rgba(0,0,0,.18);
+      background:#fff; font-family:inherit; font-size:.78rem; font-weight:600;
+      cursor:pointer; color:#111; transition:background .15s;
+    }
+    .refs-add-btn:hover { background:#f0f0ee; }
+
+    /* Auto-populated block */
+    .refs-auto {
+      flex-shrink:0;
+      background:#fff; border:1px solid rgba(0,0,0,.1);
+      border-radius:10px; padding:12px 13px; margin-bottom:10px;
+    }
+    .refs-auto-label {
+      font-size:.7rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.08em; color:#bbb; margin-bottom:8px;
+    }
+    
+    #autoRefsList {
+      list-style:none; padding:0; margin:0;
+    }
+    #autoRefsList li {
+      font-size:.83rem; color:#444; padding:5px 0;
+      border-bottom:1px solid rgba(0,0,0,.07); line-height:1.4;
+    }
+    #autoRefsList li:last-child { border-bottom:none; }
+    #autoRefsList li.empty { color:#bbb; font-style:italic; }
+    
+
+      
+    /* Manual entries */
+    .refs-manual {
+      flex:1; min-height:0;
+      background:#fff; border:1px solid rgba(0,0,0,.1);
+      border-radius:10px; padding:12px 13px;
+      display:flex; flex-direction:column; gap:8px; overflow:hidden;
+    }
+    .refs-manual-label {
+      font-size:.7rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.08em; color:#bbb; flex-shrink:0;
+    }
+    #manualRefsList {
+      flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px;
+    }
+    #manualRefsList::-webkit-scrollbar { width:3px; }
+    #manualRefsList::-webkit-scrollbar-thumb { background:#ddd; border-radius:3px; }
+
+    .ref-item {
+      display:flex; align-items:flex-start; gap:8px;
+      background:#f7f7f5; border-radius:8px; padding:8px 10px;
+      font-size:.82rem; color:#333; line-height:1.4;
+    }
+    .ref-item-text { flex:1; word-break:break-word; }
+    .ref-del {
+      background:none; border:none; cursor:pointer; color:#bbb;
+      font-size:.85rem; padding:0 2px; flex-shrink:0; transition:color .15s;
+      line-height:1;
+    }
+    .ref-del:hover { color:#e53935; }
+    .ref-empty { font-size:.82rem; color:#bbb; font-style:italic; padding:4px 0; }
+
+    /* Add reference input row */
+    .refs-input-row {
+      display:flex; gap:7px; flex-shrink:0;
+    }
+    #newRefInput {
+      flex:1; padding:9px 11px; border:1px solid rgba(0,0,0,.18); border-radius:8px;
+      font-family:inherit; font-size:.83rem; color:#111; background:#fff; outline:none;
+    }
+    #newRefInput:focus { border-color:#555; }
+    #addRefBtn {
+      padding:9px 13px; border-radius:8px; border:none;
+      background:linear-gradient(135deg,#111,#444); color:#fff;
+      font-family:inherit; font-size:.83rem; font-weight:700; cursor:pointer;
+      transition:opacity .15s; white-space:nowrap;
+    }
+    #addRefBtn:hover { opacity:.85; }
+
+    /* ══════════════════════════════
+       FOOTER
+    ══════════════════════════════ */
+    footer {
+      height:34px; flex-shrink:0;
+      background:#fff; border-top:1px solid rgba(0,0,0,.09);
+      display:flex; align-items:center; justify-content:center;
+      font-size:.76rem; color:#bbb;
+    }
+
+    /* ══════════════════════════════
+       MODAL
+    ══════════════════════════════ */
+    .modal-bg {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,.4); z-index:999;
+      align-items:center; justify-content:center;
+    }
+    .modal-bg.open { display:flex; }
+    .modal-box {
+      background:#fff; border-radius:18px; padding:30px 28px;
+      max-width:420px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,.18);
+    }
+    .modal-box h2 { font-size:1.15rem; font-weight:700; margin-bottom:10px; }
+    .modal-box p  { font-size:.88rem; color:#666; line-height:1.65; margin-bottom:8px; }
+    .modal-close  {
+      margin-top:16px; padding:10px 20px;
+      background:linear-gradient(135deg,#111,#444); color:#fff;
+      border:none; border-radius:9px; font-family:inherit; font-weight:700; cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">
+  <i data-lucide="pill"></i>
+</div>
+    <div>
+      <span class="nav-logo-title">PharmacyPrep</span>
+      <span class="nav-logo-sub">AI Patient Simulator</span>
+    </div>
+  </div>
+  <div class="nav-center">AI Patient Simulator</div>
+  <div class="nav-spacer"></div>
+<a href="https://prepcourses.ai/" class="nav-btn" style="text-decoration:none; color:#111; display:flex; align-items:center; gap:4px;">
+    <i data-lucide="home" class="icon"></i>
+    Home
+  </a>
+  <button class="nav-btn" id="infoBtn">
+    <i data-lucide="info" class="icon"></i>
+    Info
+  </button>
+  <button class="nav-btn" id="logoutBtn">Logout</button>
+</nav>
+
+<!-- ══ SHELL ══ -->
+<div class="shell">
+  <div class="columns">
+
+    <!-- ════ COL 1: CONTROLS (20%) ════ -->
+    <div class="col col-controls">
+
+      <!-- Toggle (top) -->
+      <div class="sb-fixed">
+       <button class="sb-toggle" id="modeToggleBtn">
+  <i data-lucide="folder" class="icon"></i>
+  Manual / Default Upload
+</button>
+      </div>
+
+      <hr class="sb-hr">
+
+      <!-- Case Selection — content height, never grows -->
+      <div class="sb-case-block">
+        <div class="sb-label">Case Selection</div>
+        <div id="dropdownContainer">
+          <select id="caseCategory"><option disabled selected>Chapter Dropdown</option></select>
+          <select id="caseList"><option disabled selected>Case Dropdown</option></select>
+        </div>
+        <label class="upload-zone" id="uploadBox" for="caseFile" style="display:none;">
+          <strong>Upload a Case File</strong>
+          <small>PDF, TXT, or DOCX</small>
+        </label>
+        <input id="caseFile" type="file" accept=".pdf,.txt,.docx">
+      </div>
+
+      <hr class="sb-hr">
+
+      <div class="sb-status" id="status">Default case mode. Select a category.</div>
+
+      <hr class="sb-hr">
+
+      <!-- View Results — flex:1 share of remaining space -->
+      <div class="sb-action">
+        <button class="sb-btn dark" id="resultsBtn" disabled>View Results</button>
+      </div>
+
+      <hr class="sb-hr">
+
+      <!-- View History — flex:1 share of remaining space -->
+      <div class="sb-action">
+        <button class="sb-btn light" id="historyBtn">View History</button>
+      </div>
+
+      <hr class="sb-hr">
+
+      <!-- Restart Case — flex:1 share of remaining space -->
+      <div class="sb-action">
+        <button class="sb-btn light" id="resetBtn">Restart Case</button>
+      </div>
+
+    </div>
+
+    <!-- ════ COL 2: CHAT (55%) ════ -->
+    <div class="col col-chat">
+      <button id="micBtn" disabled>
+  <i data-lucide="mic" class="icon"></i>
+  Start Session
+</button>
+      <div class="chat-box">
+        <div id="messages" class="messages"></div>
+      </div>
+    </div>
+
+<!-- ════ COL 3: REFERENCES (25%) ════ -->
+<div class="col col-refs">
+
+  <!-- Tabs -->
+  <div style="display:flex; gap:6px; margin-bottom:10px;">
+    <button id="notesTabBtn" class="refs-tab active">My Notes</button>
+    <button id="caseTabBtn" class="refs-tab">Case Files</button>
+  </div>
+
+  <!-- AUTO CASE REFERENCES -->
+  <div class="refs-auto">
+    <div class="refs-auto-label">From Case File</div>
+    <ul id="autoRefsList">
+      <li class="empty">Load a case to see references.</li>
+    </ul>
+  </div>
+
+  <!-- STRUCTURED CASE DETAILS -->
+<!-- STRUCTURED CASE DETAILS -->
+<!-- STRUCTURED CASE DETAILS -->
+<div id="caseDetailsBox" style="
+  background:#fff;
+  border:1px solid rgba(0,0,0,.1);
+  border-radius:10px;
+  padding:12px 13px;
+  font-size:.82rem;
+  line-height:1.6;
+  margin-bottom:10px;
+">
+  <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#bbb;margin-bottom:8px;">Case Notes</div>
+  <div id="caseDetailsContent" style="color:#ccc;font-style:italic;font-size:.82rem;">No case loaded yet.</div>
+</div>
+
+<div id="caseRefsBox" style="
+  background:#fff;
+  border:1px solid rgba(0,0,0,.12);
+  border-radius:10px;
+  padding:12px 13px;
+  font-size:.86rem;
+  font-weight:600;
+  line-height:1.7;
+  max-height:220px;
+  overflow-y:auto;
+  flex-shrink:0;
+">
+  <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#bbb;margin-bottom:10px;">References</div>
+  <ul id="caseRefsList" style="list-style:disc;padding-left:18px;margin:0;color:#222;line-height:1.7;">
+    <li style="color:#ccc;font-style:italic;list-style:none;padding-left:0;font-weight:400;">No references found yet.</li>
+  </ul>
+</div>
+
+  <!-- MANUAL NOTES -->
+  <div class="refs-manual">
+    <div class="refs-manual-label">My Notes</div>
+
+    <div id="manualRefsList">
+      <div class="ref-empty">No Notes added yet.</div>
+    </div>
+
+<div class="refs-input-row">
+      <input id="newRefInput" type="text" placeholder="Add a note…">
+      <button id="addRefBtn">+ Add</button>
+    </div>
+  </div>
+
+  </div> <!-- closes col-refs -->
+</div> <!-- closes .columns -->
+
+<!-- ══ FOOTER ══ -->
+<footer>© 2025 PharmacyPrep | AI-Driven OSCE Training Platform</footer>
+
+</div> <!-- closes .shell -->
+
+<!-- ══ INFO MODAL ══ -->
+<div class="modal-bg" id="infoModal">
+  <div class="modal-box">
+    <h2>About PharmacyPrep</h2>
+    <p>Practice real patient interviewing and OSCE-style assessments with an AI patient simulator.</p>
+    <p>Select a default case or upload your own file, then press <strong>Start Pharmacy Session</strong>.</p>
+    <p>Use the <strong>References</strong> panel on the right to view case references and add your own notes.</p>
+    <button class="modal-close" id="modalClose">Got it</button>
+  </div>
+</div>
+
+<!-- ══ HISTORY MODAL ══ -->
+<div class="modal-bg" id="historyModal">
+  <div class="modal-box" style="max-width:700px; width:94%; max-height:82vh; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-shrink:0;">
+      <h2 style="margin:0;">🕓 Session History</h2>
+      <button class="modal-close" id="historyClose" style="margin:0; padding:8px 16px;">✕ Close</button>
+    </div>
+    <div id="historyList" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:14px; padding-right:4px;"></div>
+    <div id="historyEmpty" style="color:#aaa; font-size:.9rem; font-style:italic; text-align:center; padding:32px 0;">No sessions recorded yet. Complete a case and view results to save history.</div>
+  </div>
+</div>
+
+<script>
+  /* ── refs ── */
+  const fileInput  = document.getElementById('caseFile');
+  const statusEl   = document.getElementById('status');
+  const messages   = document.getElementById('messages');
+  const resetBtn   = document.getElementById('resetBtn');
+  const micBtn     = document.getElementById('micBtn');
+  const resultsBtn = document.getElementById('resultsBtn');
+  const modeBtn    = document.getElementById('modeToggleBtn');
+  const uploadBox  = document.getElementById('uploadBox');
+  const dropdownContainer = document.getElementById('dropdownContainer');
+  const autoRefsList  = document.getElementById('autoRefsList');
+  const manualRefsList = document.getElementById('manualRefsList');
+  const newRefInput   = document.getElementById('newRefInput');
+  const addRefBtn     = document.getElementById('addRefBtn');
+
+  let recognition, sessionActive=false, isSpeaking=false, currentAudio=null;
+  let fileUploaded=false, locked=false;
+  let transcriptHTML='', caseResults=null, useDefaultCases=true;
+  let manualRefs = [];
+  let sessionHistory = []; // [{caseName, date, results}]
+  let currentCaseName = '';
+const notesBtn = document.getElementById("notesTabBtn");
+const caseBtn  = document.getElementById("caseTabBtn");
+
+const caseBox  = document.getElementById("caseDetailsBox");
+const notesBox = document.querySelector(".refs-manual");
+const autoBox  = document.querySelector(".refs-auto");
+
+function activateNotes() {
+  notesBtn.classList.add("active");
+  caseBtn.classList.remove("active");
+  caseBox.style.display = "none";
+  document.getElementById('caseRefsBox').style.display = "none";
+  notesBox.style.display = "flex";
+  autoBox.style.display = "none";
+}
+
+function activateCase() {
+  caseBtn.classList.add("active");
+  notesBtn.classList.remove("active");
+  caseBox.style.display = "block";
+  document.getElementById('caseRefsBox').style.display = "block";
+  notesBox.style.display = "none";
+  autoBox.style.display = "none";
+}
+// Default on load
+activateNotes();
+
+notesBtn.addEventListener("click", activateNotes);
+caseBtn.addEventListener("click", activateCase);
+
+  /* ── Modal ── */
+  document.getElementById('infoBtn').addEventListener('click', ()=>document.getElementById('infoModal').classList.add('open'));
+  document.getElementById('modalClose').addEventListener('click', ()=>document.getElementById('infoModal').classList.remove('open'));
+  document.getElementById('logoutBtn').addEventListener('click', ()=>{ if(confirm('Log out?')) window.location.href='/logout'; });
+
+  /* ── History Modal ── */
+  document.getElementById('historyBtn').addEventListener('click', ()=>{
+    renderHistory();
+    document.getElementById('historyModal').classList.add('open');
+  });
+  document.getElementById('historyClose').addEventListener('click', ()=>{
+    document.getElementById('historyModal').classList.remove('open');
+  });
+function populateCaseDetails(facts) {
+  const content = document.getElementById("caseDetailsContent");
+  if (!facts) return;
+  const items = [];
+  if (facts.name) items.push(`Name: ${facts.name}`);
+  if (facts.age) items.push(`Age: ${facts.age}`);
+  if (facts.gender) items.push(`Gender: ${facts.gender}`);
+  if (facts.complaint) items.push(`Chief Complaint: ${facts.complaint}`);
+  if (facts.diagnosis) items.push(`Diagnosis: ${facts.diagnosis}`);
+  if (facts.medications) {
+    const meds = Array.isArray(facts.medications) ? facts.medications.join(", ") : facts.medications;
+    items.push(`Current Medications: ${meds}`);
+  }
+  if (facts.allergies) items.push(`Allergies: ${facts.allergies}`);
+  if (!items.length) { content.innerHTML = '<span style="color:#ccc;font-style:italic;">No structured details available.</span>'; return; }
+  content.style.color='#333'; content.style.fontStyle='normal';
+content.innerHTML = `<ul style="list-style:disc;padding-left:16px;margin:0;line-height:1.5;color:#333;">${items.map(i=>`<li style="margin-bottom:5px;">${i}</li>`).join("")}</ul>`;
+}
+  function renderHistory() {
+    const list  = document.getElementById('historyList');
+    const empty = document.getElementById('historyEmpty');
+    list.innerHTML = '';
+    if (!sessionHistory.length) {
+      empty.style.display = 'block'; list.style.display = 'none'; return;
+    }
+    empty.style.display = 'none'; list.style.display = 'flex';
+    // Show most recent first
+    [...sessionHistory].reverse().forEach((entry, idx) => {
+      const d = entry.results;
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#f7f7f5;border:1px solid rgba(0,0,0,.1);border-radius:12px;padding:16px 18px;';
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <div style="font-weight:700;font-size:.97rem;">${entry.caseName || 'Unnamed Case'}</div>
+            <div style="font-size:.76rem;color:#aaa;margin-top:2px;">${entry.date}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#bbb;margin-bottom:6px;">Strengths</div>
+            <ul style="list-style:disc;padding-left:16px;margin:0 0 10px;font-size:.84rem;line-height:1.65;color:#333;">
+              ${d.good.map(f=>`<li>${f}</li>`).join('')}
+            </ul>
+            <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#bbb;margin-bottom:6px;">Areas to Improve</div>
+            <ul style="list-style:disc;padding-left:16px;margin:0;font-size:.84rem;line-height:1.65;color:#333;">
+              ${d.improvement.map(f=>`<li>${f}</li>`).join('')}
+            </ul>
+          </div>
+          <div>
+            <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#bbb;margin-bottom:10px;">Scores</div>
+            ${histBar('Listening',d.listening)}
+            ${histBar('Empathy',d.empathy)}
+            ${histBar('Communication',d.communication)}
+            ${histBar('Problem-Solving',d.problem_solving)}
+          </div>
+        </div>`;
+      list.appendChild(card);
+    });
+  }
+
+  function histBar(label, pct) {
+    return `<div style="margin-bottom:9px;">
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;font-weight:600;margin-bottom:3px;">
+        <span>${label}</span><span style="color:#888">${pct}%</span>
+      </div>
+      <div style="background:#e5e5e3;border-radius:99px;height:7px;overflow:hidden;">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#111,#555);border-radius:99px;"></div>
+      </div></div>`;
+  }
+
+  /* ── Helpers ── */
+  function scrollToBottom() { messages.scrollTop=messages.scrollHeight; }
+  function addBubble(sender,text) {
+    const w=document.createElement('div'); w.className='msg '+sender;
+    w.innerHTML=`<div class="bubble">${text}</div>`;
+    messages.appendChild(w); scrollToBottom();
+  }
+  function enableControls()  { micBtn.disabled=false; resultsBtn.disabled=false; }
+  function disableControls() { micBtn.disabled=true;  resultsBtn.disabled=true;  }
+
+  function lockDropdowns() {
+    document.getElementById('caseCategory').disabled = true;
+    document.getElementById('caseList').disabled = true;
+    document.getElementById('caseCategory').style.opacity = '0.5';
+    document.getElementById('caseList').style.opacity = '0.5';
+  }
+  function unlockDropdowns() {
+    document.getElementById('caseCategory').disabled = false;
+    document.getElementById('caseList').disabled = false;
+    document.getElementById('caseCategory').style.opacity = '';
+    document.getElementById('caseList').style.opacity = '';
+  }
+
+  /* ── References: auto-populate ── */
+function setAutoRefs(refsText) {
+    autoRefsList.innerHTML = '';
+    const caseRefsList = document.getElementById('caseRefsList');
+    if (!refsText || !refsText.trim()) {
+      autoRefsList.innerHTML = '<li class="empty">No references found.</li>';
+      if(caseRefsList) caseRefsList.innerHTML = '<li style="color:#ccc;font-style:italic;list-style:none;padding-left:0;font-weight:400;">No references found.</li>';
+      return;
+    }
+    const items = refsText.split(/[\n;]+/).map(s=>s.trim()).filter(Boolean);
+    autoRefsList.innerHTML = '';
+    if(caseRefsList) caseRefsList.innerHTML = '';
+    items.forEach(ref => {
+      const li1 = document.createElement('li'); li1.textContent = ref; autoRefsList.appendChild(li1);
+      if(caseRefsList){
+        const li2 = document.createElement('li');
+        li2.textContent = ref;
+        li2.style.color = '#222';
+        li2.style.fontWeight = '600';
+        caseRefsList.appendChild(li2);
+      }
+    });
+  }
+
+  /* ── References: manual ── */
+  function renderManualRefs() {
+    manualRefsList.innerHTML = '';
+    if (!manualRefs.length) {
+      manualRefsList.innerHTML = '<div class="ref-empty">No references added yet.</div>';
+      return;
+    }
+    manualRefs.forEach((ref, i) => {
+      const div = document.createElement('div');
+      div.className = 'ref-item';
+      div.innerHTML = `<span class="ref-item-text">${ref}</span><button class="ref-del" data-i="${i}" title="Remove">✕</button>`;
+      manualRefsList.appendChild(div);
+    });
+    manualRefsList.querySelectorAll('.ref-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        manualRefs.splice(+btn.dataset.i, 1);
+        renderManualRefs();
+      });
+    });
+  }
+
+  function addManualRef() {
+    const val = newRefInput.value.trim();
+    if (!val) return;
+    manualRefs.push(val);
+    newRefInput.value = '';
+    renderManualRefs();
+  }
+
+  addRefBtn.addEventListener('click', addManualRef);
+  newRefInput.addEventListener('keydown', e => { if (e.key==='Enter') addManualRef(); });
+
+  /* ── Mode Toggle ── */
+  modeBtn.addEventListener('click', ()=>{
+    useDefaultCases=!useDefaultCases;
+    if (useDefaultCases) {
+      modeBtn.textContent=' Manual / Default Upload';
+      uploadBox.style.display='none'; dropdownContainer.style.display='block';
+      statusEl.textContent=' Default case mode. Select a category.';
+    } else {
+      modeBtn.textContent=' Switch to Default Cases';
+      uploadBox.style.display=''; dropdownContainer.style.display='none';
+      statusEl.textContent=' Upload a file to begin.';
+    }
+  });
+
+  /* ── File Upload ── */
+  fileInput.addEventListener('change', async (e)=>{
+    const file=e.target.files[0]; if(!file) return;
+    statusEl.textContent='🧠 Reading case…';
+    const fd=new FormData(); fd.append('file',file);
+    try {
+      const res=await fetch('/upload',{method:'POST',body:fd});
+      const data=await res.json();
+      if(data.error){statusEl.textContent='❌ '+data.error;return;}
+      statusEl.textContent='✅ Case ready. AI is the patient.';
+      fileUploaded=true; enableControls();
+      currentCaseName = file.name.replace(/\.[^.]+$/, '');
+      addBubble('ai',(data.case_summary||'Case ready.').replace(/^Case Summary:/i,'<b>Case Summary:</b> '));
+      setAutoRefs(data.references);
+      populateCaseDetails(data.extracted);
+      activateCase();
+    } catch { statusEl.textContent='❌ Upload failed.'; }
+  });
+
+  /* ── TTS ── */
+function playVoice(text) {
+    if(isSpeaking) return; isSpeaking=true;
+    fetch('/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})})
+      .then(r=>r.json()).then(d=>{
+        if(!d.audio){isSpeaking=false;locked=false;return;}
+        currentAudio=new Audio(d.audio);
+        micBtn.classList.remove('active'); micBtn.classList.add('speaking');
+        micBtn.innerHTML='<i data-lucide="mic" class="icon"></i> Speaking...'; lucide.createIcons();
+        // ← stop recognition while AI speaks so it can't hear itself
+        if(recognition){ recognition.stop(); }
+        currentAudio.play();
+        currentAudio.onended=()=>{
+          currentAudio=null;
+          isSpeaking=false; micBtn.disabled=false;
+          micBtn.classList.remove('speaking'); micBtn.classList.add('active');
+          micBtn.innerHTML='<i data-lucide="headphones" class="icon"></i> Listening...'; lucide.createIcons();
+          // ← wait 800ms before listening so mic doesn't catch audio reverb
+          setTimeout(()=>{
+            if(sessionActive&&recognition){ locked=false; recognition.start(); }
+          }, 800);
+        };
+      }).catch(()=>{isSpeaking=false;locked=false;});
+  }
+
+  /* ── Ask ── */
+  async function sendQuestion(text) {
+    if(!fileUploaded||locked) return;
+    const q=text?.trim(); if(!q) return;
+    locked=true; addBubble('user',q);
+    try {
+      const res=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});
+      const data=await res.json();
+      if(data.error){addBubble('ai','(Error) '+data.error);locked=false;return;}
+      addBubble('ai',data.answer); playVoice(data.answer);
+    } catch {addBubble('ai','(Network error)');locked=false;}
+  }
+
+  /* ── Start Session ── */
+  async function startSession() {
+    if(!fileUploaded||locked) return;
+    if(recognition){recognition.stop();recognition=null;}
+    locked=true; sessionActive=true; micBtn.disabled=true;
+    let greeting=null;
+    try {
+      const res=await fetch('/start-session',{method:'POST'});
+      const data=await res.json(); greeting=data.greeting;
+    } catch {addBubble('ai','(Failed to start)');locked=false;return;}
+    if(greeting){addBubble('ai',greeting);playVoice(greeting);}else{locked=false;return;}
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){alert('Speech recognition not supported');locked=false;return;}
+    recognition=new SR(); recognition.lang='en-US'; recognition.interimResults=true; recognition.continuous=true;
+    recognition.onstart=()=>{micBtn.classList.add('active');micBtn.textContent='🎧 Listening...';};
+    let buffer='',silenceTimer=null;
+recognition.onresult=(e)=>{
+      if(locked||isSpeaking||!sessionActive) return;
+      const r=e.results[e.results.length-1]; if(!r.isFinal) return;
+      buffer+=' '+r[0].transcript.trim();
+      clearTimeout(silenceTimer);
+      silenceTimer=setTimeout(()=>{const t=buffer.trim();if(t)sendQuestion(t);buffer='';},1200);
+    };
+    recognition.onend=()=>{if(sessionActive&&!isSpeaking&&!locked) setTimeout(()=>{ if(sessionActive&&!isSpeaking&&!locked) recognition.start(); }, 500);};
+    recognition.onerror=()=>{if(!sessionActive)stopSession();};
+  }
+
+  /* ── Stop Session ── */
+function stopSession() {
+    sessionActive=false; locked=false; isSpeaking=false;
+    if(recognition){ recognition.stop(); recognition=null; }
+    if(currentAudio){ currentAudio.pause(); currentAudio.currentTime=0; currentAudio=null; }
+    micBtn.classList.remove('active','speaking');
+    micBtn.innerHTML='<i data-lucide="mic" class="icon"></i> Start Pharmacy Session'; lucide.createIcons();
+    micBtn.style.background='';
+  }
+
+micBtn.addEventListener('click',()=>{
+    if(!fileUploaded) return;
+    if(isSpeaking){
+      if(currentAudio){ currentAudio.pause(); currentAudio.currentTime=0; currentAudio=null; }
+      isSpeaking=false; locked=true;  // ← keep locked=true to block any buffered input
+      micBtn.classList.remove('speaking');
+      micBtn.innerHTML='<i data-lucide="mic" class="icon"></i> Start Pharmacy Session'; lucide.createIcons();
+      micBtn.style.background='';
+      sessionActive=false;
+      if(recognition){ recognition.stop(); recognition=null; }
+      setTimeout(()=>{ locked=false; }, 1500); // ← 1.5s cooldown before accepting input again
+      return;
+    }
+    if(locked) return;
+    if(!sessionActive) startSession(); else stopSession();
+  });
+  /* ── Results ── */
+  resultsBtn.addEventListener('click', async ()=>{
+    if(!fileUploaded) return;
+    stopSession();
+    if(caseResults){renderResults(caseResults);return;}
+    transcriptHTML=messages.innerHTML; messages.innerHTML='';
+    addBubble('ai','Generating analysis...');
+    try {
+      const res=await fetch('/results'); const data=await res.json();
+      if(data.error){addBubble('ai','(Error) '+data.error);return;}
+      caseResults=data;
+      // Save to history
+      sessionHistory.push({
+        caseName: currentCaseName || 'Case Session',
+        date: new Date().toLocaleString('en-CA',{dateStyle:'medium',timeStyle:'short'}),
+        results: data
+      });
+      renderResults(data);
+    } catch {addBubble('ai','(Network error)');}
+  });
+
+  function renderBar(label,pct){
+    return `<div style="margin-bottom:11px;">
+      <div style="display:flex;justify-content:space-between;font-size:.87rem;font-weight:600;margin-bottom:4px;">
+        <span>${label}</span><span style="color:#666">${pct}%</span>
+      </div>
+      <div style="background:#eee;border-radius:99px;height:14px;overflow:hidden;">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#111,#555);border-radius:99px;"></div>
+      </div></div>`;
+  }
+
+function renderResults(data){
+    const overall = Math.round((data.listening + data.empathy + data.communication + data.problem_solving) / 4);
+    const safety = Math.round((data.problem_solving * 0.6) + (data.listening * 0.4));
+    const engagement = Math.round((data.listening * 0.5) + (data.communication * 0.5));
+    const completeness = Math.round((data.problem_solving * 0.5) + (data.communication * 0.3) + (data.empathy * 0.2));
+
+    function donut(pct, label){
+      const r=70, circ=2*Math.PI*r;
+      const fill = circ - (pct/100)*circ;
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <svg width="170" height="170" viewBox="0 0 170 170">
+          <circle cx="85" cy="85" r="${r}" fill="none" stroke="#e5e5e3" stroke-width="13"/>
+          <circle cx="85" cy="85" r="${r}" fill="none" stroke="#111" stroke-width="13"
+            stroke-dasharray="${circ}" stroke-dashoffset="${fill}"
+            stroke-linecap="round"
+            transform="rotate(-90 85 85)"/>
+          <text x="85" y="78" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="24" font-weight="700" fill="#111">${pct}%</text>
+          <text x="85" y="100" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#999">${label}</text>
+        </svg>
+      </div>`;
+    }
+
+    messages.innerHTML=`
+      <div style="padding:4px 2px;">
+        <button id="backBtn" style="background:linear-gradient(135deg,#111,#444);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-family:inherit;font-weight:700;font-size:.86rem;cursor:pointer;margin-bottom:16px;">← Back to Chat</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+          <div>
+            <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#111;margin-bottom:8px;">Strengths</div>
+            <ul style="list-style:disc;padding-left:18px;font-size:.89rem;line-height:1.75;margin-bottom:16px;">${data.good.map(f=>`<li>${f}</li>`).join('')}</ul>
+            <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#111;margin-bottom:8px;">Areas to Improve</div>
+            <ul style="list-style:disc;padding-left:18px;font-size:.89rem;line-height:1.75;">${data.improvement.map(f=>`<li>${f}</li>`).join('')}</ul>
+          </div>
+          <div>
+            <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#111;margin-bottom:8px;">Interaction Analysis</div>
+            ${renderBar('Listening',data.listening)}
+            ${renderBar('Empathy',data.empathy)}
+            ${renderBar('Communication',data.communication)}
+            ${renderBar('Problem-Solving',data.problem_solving)}
+          </div>
+        </div>
+        <div style="border-top:1px solid rgba(0,0,0,.08);padding-top:20px;display:flex;justify-content:center;gap:24px;flex-wrap:wrap;">
+          ${donut(overall,'Overall')}
+          ${donut(safety,'Clinical Safety')}
+          ${donut(engagement,'Patient Engagement')}
+          ${donut(completeness,'Session Completeness')}
+        </div>
+      </div>`;
+    document.getElementById('backBtn').addEventListener('click',()=>{messages.innerHTML=transcriptHTML;scrollToBottom();});
+  }
+
+  /* ── Reset ── */
+resetBtn.addEventListener('click', async ()=>{
+    stopSession();
+    await fetch('/reset-case',{method:'POST'});
+    messages.innerHTML=''; fileInput.value='';
+    fileUploaded=false; caseResults=null; disableControls();
+    unlockDropdowns();
+
+    // ← clear case file tab
+    autoRefsList.innerHTML='<li class="empty">Load a case to see references.</li>';
+    document.getElementById('caseDetailsBox').innerHTML='No case loaded.';
+    document.getElementById('caseDetailsBox').style.display='none';
+
+    // ← reset dropdowns
+    document.getElementById('caseCategory').selectedIndex=0;
+    document.getElementById('caseList').innerHTML='<option disabled selected>Case Dropdown</option>';
+
+    statusEl.textContent=useDefaultCases?'Select a category.':'📄 Upload a file.';
+    addBubble('ai','New session started. Select or upload a case to begin.');
+    activateNotes();
+  });
+
+  /* ── Load Chapters ── */
+  async function loadChapters(){
+    try {
+      const res=await fetch('/list-chapters'); const data=await res.json();
+      const catDD=document.getElementById('caseCategory');
+      const caseDD=document.getElementById('caseList');
+      catDD.innerHTML=`<option disabled selected>Chapter Dropdown</option>`;
+      caseDD.innerHTML=`<option disabled selected>Case Dropdown</option>`;
+      Object.keys(data).forEach(ch=>{const o=document.createElement('option');o.value=ch;o.textContent=ch;catDD.appendChild(o);});
+      catDD.addEventListener('change',()=>{
+        const files=data[catDD.value]; caseDD.innerHTML=`<option disabled selected>Select Case</option>`;
+        files.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;caseDD.appendChild(o);});
+      });
+    } catch {}
+  }
+  loadChapters();
+
+  document.getElementById('caseList').addEventListener('change', async ()=>{
+    const chapter=document.getElementById('caseCategory').value;
+    const file=document.getElementById('caseList').value;
+    if(!chapter||!file) return;
+    statusEl.textContent='📘 Loading case...';
+    lockDropdowns();
+    try {
+      const res=await fetch('/load-default-case',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chapter,file})});
+      const data=await res.json();
+      if(data.error){
+        statusEl.textContent='❌ '+data.error;
+        addBubble('ai','❌ Failed to load: '+data.error);
+        unlockDropdowns();
+        return;
+      }
+      currentCaseName = file;
+      fileUploaded=true;
+      enableControls();
+      addBubble('ai',(data.case_summary||'Case ready.').replace(/^Case Summary:/i,'<b>Case Summary:</b> '));
+      setAutoRefs(data.references||'');
+      populateCaseDetails(data.extracted||{});
+      activateCase();
+      statusEl.textContent='✅ Case loaded. AI is now the patient.';
+      unlockDropdowns();
+    } catch {statusEl.textContent='❌ Failed to load case.';unlockDropdowns();}
+  });
+
+  /* ── Welcome ── */
+  addBubble('ai','Welcome! Select a case from the sidebar or upload your own to begin a pharmacy session.');
+  lucide.createIcons();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+flask
+flask-cors
+openai
+python-docx
+PyPDF2
+requests
+gunicorn
