@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 from openai import OpenAI
+from elevenlabs.client import ElevenLabs
 import os, re, uuid, json
 from PyPDF2 import PdfReader
 from docx import Document
 from flask import session, redirect, url_for
 from functools import wraps
+
 # -------------------- Flask & OpenAI --------------------
 
 app = Flask(__name__)
@@ -21,6 +23,7 @@ def login_required(f):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return decorated
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 
@@ -29,9 +32,14 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 # ---------------- OPENAI CONFIG ----------------
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+OPENAI_API_KEY   = os.environ.get("OPENAI_API_KEY")
+ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
+DEEPGRAM_API_KEY   = os.environ.get("DEEPGRAM_API_KEY")
+
+client    = OpenAI(api_key=OPENAI_API_KEY)
+el_client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+
 # -------------------- Global Case / Conversation State --------------------
 
 case_context = {
@@ -51,39 +59,28 @@ MAX_TURNS = 8
 
 
 def extract_references(text: str) -> str:
-    # 1. Look for explicit References section
-    m = re.search(r"References?\s*[:\-]?\s*\n(.+?)(\n\n|\Z)", text, re.I | re.S)
-    if m:
-        block = m.group(1).strip()
-        # Clean it up — split into lines, keep only short reference-like lines
-        lines = [l.strip() for l in block.split('\n') if l.strip()]
-        clean = [l for l in lines if len(l) < 120 and not re.search(
-            r'(patient|name|age|gender|weight|height|allerg|medic|diagnos|rx|date|fill|qty|directions|profile|record|information|candidate|instructions|station|timeframe)',
-            l, re.I
-        )]
-        if clean:
-            return '\n'.join(clean)
-
-    # 2. Look for inline reference line e.g. "References: ECPS, Health Canada advisory"
-    m2 = re.search(r"References?\s*[:\-]\s*([^\n]{3,120})", text, re.I)
-    if m2:
-        ref_line = m2.group(1).strip()
-        # Cut off at ANY uppercase block word or exam section header
-        ref_line = re.split(
-            r"(?i)(candidate|instructions|station|timeframe|time\s*frame|kindly|counsel|advise|exam\s*case|patient\s*record|profile|see\s*below|information)",
-            ref_line
-        )[0].strip()
-        ref_line = ref_line.rstrip('.,; ')
-        # Only return if something meaningful is left
-        if ref_line and len(ref_line) > 2:
-            return ref_line
-
-    # 3. Scan for known clinical reference keywords only
+    # Known clinical/pharmacy reference sources — ONLY these are valid references
     keywords = [
         "Health Canada", "CPS", "e-CPS", "ECPS",
         "Compendium of Pharmaceuticals", "Product Monograph",
-        "FDA", "UpToDate", "Lexicomp", "NAPRA", "ISMP", "RxTx"
+        "FDA", "UpToDate", "Lexicomp", "NAPRA", "ISMP", "RxTx",
+        "CTMA", "Pharmacists Association", "Canadian Pharmacists",
+        "Natural Health Products", "Therapeutic Choices"
     ]
+
+    # 1. Look for an explicit "References:" line and extract only known keywords from it
+    m = re.search(r"References?\s*[:\-]\s*([^\n]{3,200})", text, re.I)
+    if m:
+        ref_line = m.group(1).strip()
+        # Only keep the portion before any exam/candidate instruction words
+        ref_line = re.split(
+            r"(?i)\b(candidate|instructions|station|timeframe|kindly|counsel|advise|exam|profile|see below|information|checklist|solved|unsolved|marginally)\b",
+            ref_line
+        )[0].strip().rstrip('.,; ')
+        if ref_line and len(ref_line) > 2 and len(ref_line) < 150:
+            return ref_line
+
+    # 2. Scan full text for known clinical reference keywords only
     found = []
     for k in keywords:
         if re.search(r'\b' + re.escape(k) + r'\b', text, re.I):
@@ -173,6 +170,7 @@ def chat_once(msgs, **kwargs):
 @login_required
 def home():
     return render_template("index.html")
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -199,11 +197,14 @@ This may be the patient themselves, OR a caregiver/parent visiting on behalf of 
 Read the background carefully and speak as THAT person — not the person they are concerned about.
 
 For your OPENING greeting only, keep it very short and natural — just introduce yourself and say why you are here in ONE simple sentence.
-Example format: "Hi, my name is [name], I'm here because [brief reason]."
+Use the actual name from FACTS if available. Example: "Hi, my name is [actual name from FACTS], I'm here because [brief reason]."
 Do NOT give details, symptoms, or full story yet — wait for the pharmacist to ask questions.
 
-Use first person ("I", "my") as yourself — the visitor.
-Do NOT mix up your own situation with the person you are concerned about.
+CRITICAL RULES:
+1. ONLY use real information explicitly stated in FACTS. NEVER invent personal details.
+2. NEVER output placeholder text like [Your Name], [City], [Address], [Your Location], or ANY bracketed variables.
+3. If your name is in FACTS, use it naturally. If not in FACTS, say "I'd rather not say."
+4. Stay in character as the visitor at all times.
 
 PERSONA: {case_context['persona']}
 FACTS: {case_context['facts']}
@@ -269,7 +270,6 @@ def upload_case():
     case_summary = chat_once(summary_prompt, temperature=0.3)
     references = extract_references(text)
 
-
     case_context = {
         "raw": text,
         "facts": facts,
@@ -282,20 +282,17 @@ def upload_case():
         "turns": []
     }
 
-    # Push summary into chat state
     patient_state["turns"].append({
         "role": "assistant",
         "content": summary
     })
 
-    # Push references into chat state (if present)
     if references:
         patient_state["turns"].append({
             "role": "assistant",
             "content": f"References: {references}"
         })
 
-    # ✅ ALWAYS return a response
     return jsonify({
         "message": "Case uploaded successfully.",
         "case_summary": case_summary,
@@ -304,8 +301,6 @@ def upload_case():
         "extracted": facts,
         "references": references or ""
     })
-
-
 
 
 # -------------------- ASK --------------------
@@ -324,9 +319,15 @@ def ask():
 
     system_prompt = f"""
 You are roleplaying the person visiting the pharmacy as described in the case.
-For your opening, keep it very short — just your name and one brief reason for being here.
-Example: "Hi, my name is [name], I'm here because [brief reason]."
-Do NOT elaborate yet. Wait for the pharmacist to ask questions.
+This may be the patient themselves OR a caregiver. Speak naturally and stay in character.
+
+CRITICAL RULES:
+1. FACTS below contain the real patient information — answer ANY question about name, age, medications, allergies, diagnosis, or complaints using FACTS directly and naturally. Never say "I'd rather not say" for information that IS in FACTS.
+2. Only decline to answer if the information is genuinely NOT anywhere in FACTS or BACKGROUND (e.g. home address, phone number, postal code).
+3. NEVER output placeholder text like [Your Name], [City], or ANY bracketed variables.
+4. If asked something completely irrelevant to the pharmacy visit (politics, random facts, etc.): redirect politely.
+5. Never break character or acknowledge you are an AI.
+6. Keep responses VERY SHORT — one sentence only. Answer what was asked and stop.
 
 PERSONA: {case_context['persona']}
 FACTS: {case_context['facts']}
@@ -341,7 +342,7 @@ BACKGROUND: {case_context['summary']}
         model="gpt-4o-mini",
         messages=messages,
         temperature=0.4,
-        max_tokens=60
+        max_tokens=40
     )
     answer = completion.choices[0].message.content.strip()
 
@@ -352,7 +353,7 @@ BACKGROUND: {case_context['summary']}
     return jsonify({"answer": answer})
 
 
-# -------------------- TTS (WORKING NEW SDK VERSION) --------------------
+# -------------------- TTS (ElevenLabs Flash) --------------------
 
 @app.route("/tts", methods=["POST"])
 def tts():
@@ -361,22 +362,27 @@ def tts():
         return jsonify({"error": "No text provided"}), 400
 
     gender = case_context.get("gender", "").lower()
+    # ElevenLabs pre-made voices — Flash v2.5 model for lowest latency
     if gender == "female":
-        voice_choice = "nova"      # warm, natural female voice
+        voice_id = "EXAVITQu4vr4xnSDxMaL"   # Sarah — warm, natural female
     elif gender == "male":
-        voice_choice = "onyx"      # deep, natural male voice
+        voice_id = "TX3LPaxmHKxFdv7VOQHJ"   # Liam — conversational male
     else:
-        voice_choice = "alloy"     # neutral fallback
+        voice_id = "pqHfZKP75CvOlQylNhV4"   # Bill — neutral fallback
 
     audio_filename = f"voice_{uuid.uuid4().hex}.mp3"
     audio_path = os.path.join(app.config["UPLOAD_FOLDER"], audio_filename)
 
-    with client.audio.speech.with_streaming_response.create(
-        model="gpt-4o-mini-tts",
-        voice=voice_choice,
-        input=text
-    ) as r:
-        r.stream_to_file(audio_path)
+    audio = el_client.text_to_speech.convert(
+        voice_id=voice_id,
+        text=text,
+        model_id="eleven_flash_v2_5",
+        output_format="mp3_44100_128"
+    )
+
+    with open(audio_path, "wb") as f:
+        for chunk in audio:
+            f.write(chunk)
 
     return jsonify({"audio": f"/uploads/{audio_filename}", "ready": True})
 
@@ -384,29 +390,25 @@ def tts():
 
 @app.route("/list-chapters")
 def list_chapters():
-    base_path = os.path.join(BASE_DIR, "Chapters")  # Make sure this folder is in the project root
+    base_path = os.path.join(BASE_DIR, "Chapters")
 
     if not os.path.exists(base_path):
         return jsonify({"error": "Chapters folder not found"}), 404
 
     result = {}
 
-    # Loop through items in the Chapters folder
     for chapter in os.listdir(base_path):
         chapter_path = os.path.join(base_path, chapter)
 
-        # Only accept folders (Chapter 1, Chapter 2, etc.)
         if os.path.isdir(chapter_path):
-
             files = []
             for f in os.listdir(chapter_path):
                 if f.lower().endswith((".txt", ".pdf", ".docx")):
                     files.append(f)
-
-            # Add to dictionary
             result[chapter] = files
 
     return jsonify(result)
+
 # -------------------- LOAD DEFAULT CASE --------------------
 
 @app.route("/load-default-case", methods=["POST"])
@@ -416,7 +418,7 @@ def load_default_case():
     data = request.get_json()
     chapter = data.get("chapter")
     filename = data.get("file")
-    
+
     if not chapter or not filename:
         return jsonify({"error": "Invalid request"}), 400
 
@@ -426,22 +428,18 @@ def load_default_case():
     if not os.path.exists(full_path):
         return jsonify({"error": "Case file not found"}), 404
 
-    # Read file content using your extract_text() function
     try:
         text = extract_text(full_path)
     except:
         return jsonify({"error": "Failed to read file"}), 500
 
-    # Extract structured facts
     facts = extract_case_info(text)
 
-    # Infer gender if not present
     if "gender" not in facts or not facts["gender"]:
         inferred = infer_gender_from_name(facts.get("name", ""))
         if inferred:
             facts["gender"] = inferred
 
-    # Generate patient background
     summary = chat_once(
         [
             {"role": "system", "content": "Write a brief first-person patient background (1–2 sentences)."},
@@ -450,7 +448,6 @@ def load_default_case():
         temperature=0.3
     )
 
-    # Tone/persona
     persona = chat_once(
         [
             {"role": "system", "content": "Describe the patient's tone in <=2 short lines."},
@@ -459,7 +456,6 @@ def load_default_case():
         temperature=0.5
     )
 
-    # Case Summary
     case_summary = chat_once(
         [
             {"role": "system", "content": "Extract a 1–2 sentence OSCE case summary."},
@@ -469,8 +465,6 @@ def load_default_case():
     )
     references = extract_references(text)
 
-
-    # Save context
     case_context = {
         "raw": text,
         "facts": facts,
@@ -493,11 +487,15 @@ def auto_greet():
     global case_context, patient_state
 
     system_prompt = f"""
-You are the patient. Provide a simple greeting, 1 sentence.
+You are the patient visiting the pharmacy. Provide a simple, natural greeting in exactly 1 sentence.
+Use the actual name from FACTS if available — NEVER use placeholder text like [Your Name].
+
 Examples:
-- "Hi, I'm here because I'm not feeling well today."
-- "Hello, I had some concerns about my medication."
-- "Hi, I've been having this issue and wanted to ask for advice."
+- "Hi, I'm Sarah — I'm here because I've been having some concerns about my medication."
+- "Hello, I've been feeling unwell and wanted to ask the pharmacist some questions."
+- "Hi there, I have some concerns about a prescription I was given recently."
+
+CRITICAL: Only use real information from FACTS. NEVER generate placeholder text in brackets.
 
 PERSONA: {case_context['persona']}
 FACTS: {case_context['facts']}
@@ -533,7 +531,7 @@ def results():
 
     pharmacist_turns = [t for t in turns if t["role"] == "user"]
 
-    if len(pharmacist_turns) == 0:
+    if len(pharmacist_turns) == 0:  # no actual pharmacist input
         return jsonify({
             "good": [],
             "improvement": [
@@ -547,9 +545,18 @@ def results():
             "problem_solving": 0
         })
 
-    # Build transcript
+    # Only include turns from the actual session (exclude the auto-added
+    # background summary and references that are prepended at case load time)
+    session_turns = [
+        t for t in turns
+        if not (t["role"] == "assistant" and (
+            t["content"].startswith("References:") or
+            len(t["content"]) > 200  # long AI messages are setup summaries, not patient dialogue
+        ))
+    ]
+
     transcript = ""
-    for t in turns:
+    for t in session_turns:
         role = "Pharmacist" if t["role"] == "user" else "Patient"
         transcript += f"{role}: {t['content']}\n"
 
@@ -618,7 +625,7 @@ Return ONLY valid JSON with:
     try:
         raw = chat_once(
             [{"role": "user", "content": prompt}],
-            temperature=0.1,   # 🔥 lower temperature = stricter, less fluff
+            temperature=0.1,
             max_tokens=500
         )
 
@@ -629,6 +636,16 @@ Return ONLY valid JSON with:
 
     except Exception as e:
         return jsonify({"error": f"Failed to generate results: {str(e)}"}), 500
+
+# -------------------- DEEPGRAM TOKEN --------------------
+
+@app.route("/deepgram-token", methods=["GET"])
+@login_required
+def deepgram_token():
+    # Returns the Deepgram API key to the browser so it can open a WebSocket.
+    # Route is login-protected so the key is never exposed publicly.
+    return jsonify({"key": DEEPGRAM_API_KEY})
+
 # -------------------- RESET CASE --------------------
 
 @app.route("/reset-case", methods=["POST"])

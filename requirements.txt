@@ -1,7 +1,7 @@
 flask
-flask-cors
 openai
-python-docx
+elevenlabs
 PyPDF2
-requests
+python-docx
+werkzeug
 gunicorn

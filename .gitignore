@@ -1,5 +1,26 @@
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+
+# Environment / secrets — NEVER commit API keys
 .env
+.env.*
+
+# Uploads folder — user files, audio files
 uploads/
-```
+
+# VS Code
+.vscode/
+
+# MacOS
+.DS_Store
+
+# Logs
+*.log
