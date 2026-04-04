@@ -638,6 +638,9 @@ def deepgram_token():
     # Route is login-protected so the key is never exposed publicly.
     return jsonify({"key": DEEPGRAM_API_KEY})
 
+@app.route("/timerbeep.wav")
+def serve_timer_beep():
+    return send_from_directory(BASE_DIR, "timerbeep.wav")
 # -------------------- RESET CASE --------------------
 
 @app.route("/reset-case", methods=["POST"])

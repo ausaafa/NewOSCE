@@ -182,7 +182,70 @@
     .sb-btn.light:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.25); }
 
     .sb-btn:disabled { opacity:.4; cursor:not-allowed; transform:none !important; }
+        .session-timer {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:#fff;
+      border:1px solid rgba(0,0,0,.1);
+      border-radius:10px;
+      padding:10px 12px;
+      margin-bottom:10px;
+      box-shadow:0 1px 3px rgba(0,0,0,.03);
+      flex-shrink:0;
+    }
 
+    .session-timer-left {
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+
+    .session-timer-label {
+      font-size:.68rem;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:#b0b0b0;
+    }
+
+    .session-timer-time {
+      font-size:1.05rem;
+      font-weight:700;
+      letter-spacing:-.02em;
+      color:#111;
+      transition:color .2s ease;
+    }
+
+    .session-timer-time.warning {
+      color:#c62828;
+    }
+
+    .timer-pause-btn {
+      width:34px;
+      height:34px;
+      border-radius:8px;
+      border:1px solid rgba(0,0,0,.12);
+      background:#f7f7f5;
+      color:#111;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition:all .18s ease;
+      flex-shrink:0;
+    }
+
+    .timer-pause-btn:hover {
+      background:#efefec;
+    }
+
+    .timer-pause-btn.paused {
+      background:#111;
+      color:#fff;
+      border-color:#111;
+    }
     .sb-status {
       font-size:.77rem; color:#888; padding:7px 9px;
       background:#f7f7f5; border-radius:8px; border:1px solid rgba(0,0,0,.09);
@@ -438,11 +501,22 @@
 
     <div class="col col-refs">
 
+    <div style="display:flex; gap:6px; margin-bottom:10px;">
+      <button id="notesTabBtn" class="refs-tab active">My Notes</button>
+      <button id="caseTabBtn" class="refs-tab">Case Files</button>
+    </div>
 
-      <div style="display:flex; gap:6px; margin-bottom:10px;">
-        <button id="notesTabBtn" class="refs-tab active">My Notes</button>
-        <button id="caseTabBtn" class="refs-tab">Case Files</button>
+    <div class="session-timer" id="sessionTimerWrap">
+      <div class="session-timer-left">
+        <div class="session-timer-label">Station Timer</div>
+        <div class="session-timer-time" id="sessionTimer">07:00</div>
       </div>
+      <button id="timerPauseBtn" class="timer-pause-btn" type="button" aria-label="Pause timer">
+        <i data-lucide="pause" class="icon"></i>
+      </button>
+    </div>
+
+    <audio id="timerBeep" preload="auto" src="/timerbeep.wav"></audio>
 
       <div class="refs-auto">
         <div class="refs-auto-label">From Case File</div>
@@ -578,7 +652,16 @@
   const caseBox  = document.getElementById('caseDetailsBox');
   const notesBox = document.querySelector('.refs-manual');
   const autoBox  = document.querySelector('.refs-auto');
+  const sessionTimerEl   = document.getElementById('sessionTimer');
+  const timerPauseBtn    = document.getElementById('timerPauseBtn');
+  const timerBeepAudio   = document.getElementById('timerBeep');
 
+  let timerSeconds       = 420;
+  let timerInterval      = null;
+  let timerRunning       = false;
+  let timerPaused        = false;
+  let beepPlayed         = false;
+  let beepFlashTimeout   = null;
   function activateNotes() {
     notesBtn.classList.add('active'); caseBtn.classList.remove('active');
     caseBox.style.display = 'none'; document.getElementById('caseRefsBox').style.display = 'none';
@@ -883,7 +966,96 @@
 
     return ws;
   }
+    function formatTimer(totalSeconds) {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
 
+  function renderTimer() {
+    sessionTimerEl.textContent = formatTimer(timerSeconds);
+  }
+
+  function resetTimer() {
+    stopTimer();
+    timerSeconds = 420;
+    timerPaused = false;
+    timerRunning = false;
+    beepPlayed = false;
+    clearTimeout(beepFlashTimeout);
+    sessionTimerEl.classList.remove('warning');
+    timerPauseBtn.classList.remove('paused');
+    timerPauseBtn.innerHTML = '<i data-lucide="pause" class="icon"></i>';
+    lucide.createIcons();
+    renderTimer();
+  }
+
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    timerRunning = false;
+  }
+
+  function flashTimerRed() {
+    sessionTimerEl.classList.add('warning');
+    clearTimeout(beepFlashTimeout);
+    beepFlashTimeout = setTimeout(() => {
+      sessionTimerEl.classList.remove('warning');
+    }, 1800);
+  }
+
+  function playTimerBeep() {
+    try {
+      timerBeepAudio.currentTime = 0;
+      timerBeepAudio.play().catch(() => {});
+    } catch (e) {}
+    flashTimerRed();
+  }
+
+  function startTimer() {
+    if (timerRunning || timerPaused || timerSeconds <= 0) return;
+
+    timerRunning = true;
+    timerInterval = setInterval(() => {
+      if (timerPaused) return;
+
+      if (timerSeconds > 0) {
+        timerSeconds -= 1;
+        renderTimer();
+
+        if (timerSeconds === 120 && !beepPlayed) {
+          beepPlayed = true;
+          playTimerBeep();
+        }
+      }
+
+      if (timerSeconds <= 0) {
+        stopTimer();
+      }
+    }, 1000);
+  }
+
+  function pauseTimer() {
+    timerPaused = true;
+    timerRunning = false;
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    timerPauseBtn.classList.add('paused');
+    timerPauseBtn.innerHTML = '<i data-lucide="play" class="icon"></i>';
+    lucide.createIcons();
+  }
+
+  function resumeTimer() {
+    timerPaused = false;
+    timerPauseBtn.classList.remove('paused');
+    timerPauseBtn.innerHTML = '<i data-lucide="pause" class="icon"></i>';
+    lucide.createIcons();
+    startTimer();
+  }
   function playVoice(text) {
     mode = 'speaking';
     setMicUI('speaking');
@@ -906,6 +1078,11 @@
     micBtn.disabled = false;
 
     if (mode !== 'speaking') return;
+
+    if (!timerRunning && !timerPaused && timerSeconds === 420) {
+      startTimer();
+    }
+
     enterReadyState();
   }
 
@@ -1215,6 +1392,7 @@
       if (data.error) { statusEl.textContent = '❌ '+data.error; return; }
       statusEl.textContent = '✅ Case ready. AI is the patient.';
       fileUploaded = true; caseResults = null; enableControls();
+      resetTimer();
       currentCaseName = file.name.replace(/\.[^.]+$/, '');
       addBubble('ai', (data.case_summary||'Case ready.').replace(/^Case Summary:/i,'<b>Case Summary:</b> '));
       setAutoRefs(data.references); populateCaseDetails(data.extracted); activateCase();
@@ -1286,7 +1464,7 @@
       scrollToBottom();
 
       caseResults = null;
-tion
+
       resumeSession();
     });
 
@@ -1301,6 +1479,7 @@ tion
     if (loadAbort) { loadAbort.abort(); loadAbort = null; }
     loadToken++;
     fullStop();
+    resetTimer();
     await fetch('/reset-case', { method:'POST' });
     messages.innerHTML = ''; fileInput.value = '';
     fileUploaded = false; caseResults = null;
@@ -1360,6 +1539,7 @@ tion
 
       if (data.error) { statusEl.textContent='❌ '+data.error; addBubble('ai','❌ Failed: '+data.error); unlockDropdowns(); return; }
       currentCaseName = file; fileUploaded = true; caseResults = null; enableControls();
+      resetTimer();
       addBubble('ai', (data.case_summary||'Case ready.').replace(/^Case Summary:/i,'<b>Case Summary:</b> '));
       setAutoRefs(data.references||''); populateCaseDetails(data.extracted||{}); activateCase();
       statusEl.textContent = '✅ Case loaded. AI is now the patient.';
@@ -1373,6 +1553,18 @@ tion
   });
 
   addBubble('ai', 'Welcome! Select a case from the sidebar or upload your own to begin a pharmacy session.');
+    resetTimer();
+
+  timerPauseBtn.addEventListener('click', () => {
+    if (!fileUploaded) return;
+    if (!timerRunning && !timerPaused) return;
+
+    if (timerPaused) {
+      resumeTimer();
+    } else {
+      pauseTimer();
+    }
+  });
   lucide.createIcons();
 </script>
 </body>
