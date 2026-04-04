@@ -167,18 +167,12 @@ def chat_once(msgs, **kwargs):
 # -------------------- CORE ROUTES --------------------
 
 @app.route("/")
-@login_required
 def home():
     return render_template("index.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == "POST":
-        if request.form.get("username") == USERNAME and request.form.get("password") == PASSWORD:
-            session["logged_in"] = True
-            return redirect(url_for("home"))
-        return redirect("/login?error=1")
-    return render_template("login.html")
+    return redirect(url_for("home"))
 
 @app.route("/logout")
 def logout():
@@ -638,9 +632,7 @@ Return ONLY valid JSON with:
         return jsonify({"error": f"Failed to generate results: {str(e)}"}), 500
 
 # -------------------- DEEPGRAM TOKEN --------------------
-
 @app.route("/deepgram-token", methods=["GET"])
-@login_required
 def deepgram_token():
     # Returns the Deepgram API key to the browser so it can open a WebSocket.
     # Route is login-protected so the key is never exposed publicly.
