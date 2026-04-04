@@ -36,7 +36,7 @@
       border-color:#111;
     }
 
-    /* ══════════════════════════════ NAV ══════════════════════════════ */
+
     nav {
       height: 56px;
       background: #fff;
@@ -68,7 +68,7 @@
     }
     .nav-btn:hover { background:#f5f5f5; }
 
-    /* ══════════════════════════════ PAGE SHELL ══════════════════════════════ */
+
     .shell {
       display: flex;
       flex-direction: column;
@@ -76,7 +76,7 @@
       overflow: hidden;
     }
 
-    /* ══════════════════════════════ 3-COLUMN ROW ══════════════════════════════ */
+
     .columns {
       flex: 1;
       min-height: 0;
@@ -92,7 +92,7 @@
       overflow: hidden;
     }
 
-    /* ── Col 1: Controls sidebar (20%) ── */
+
     .col-controls {
       flex: 0 0 20%;
       background: #fff;
@@ -104,7 +104,7 @@
     .sb-action { flex: 1; min-height: 0; display:flex; flex-direction:column; }
     .sb-case-block { flex: 0 0 auto; display:flex; flex-direction:column; gap:8px; }
 
-    /* ── Col 2: Chat (55%) ── */
+
     .col-chat {
       flex: 0 0 55%;
       background: #fff;
@@ -113,7 +113,7 @@
       gap: 12px;
     }
 
-    /* ── Col 3: References (25%) ── */
+
     .col-refs {
       flex: 0 0 25%;
       background: #fafaf8;
@@ -121,7 +121,7 @@
       gap: 12px;
     }
 
-    /* ══════════════════════════════ SIDEBAR COMPONENTS ══════════════════════════════ */
+
     .sb-label {
       font-size:.67rem; font-weight:700; text-transform:uppercase;
       letter-spacing:.09em; color:#999; margin-bottom:7px; flex-shrink:0;
@@ -160,14 +160,13 @@
     }
     .sb-toggle:hover { background:#e8e8e5; }
 
-    /* ── Sidebar action buttons — 15% larger font ── */
     .sb-btn {
       width:100%;
       flex:1;
       border-radius:10px;
       border:none;
       font-family:inherit;
-      font-size:1.12rem;   /* was .97rem — 15% increase */
+      font-size:1.12rem;
       font-weight:700;
       cursor:pointer;
       transition:all .18s;
@@ -181,7 +180,7 @@
     .sb-btn.dark:hover:not(:disabled)  { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.25); }
     .sb-btn.light { background:linear-gradient(135deg,#111,#444); color:#fff; box-shadow:0 3px 12px rgba(0,0,0,.2); }
     .sb-btn.light:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.25); }
-    
+
     .sb-btn:disabled { opacity:.4; cursor:not-allowed; transform:none !important; }
 
     .sb-status {
@@ -190,7 +189,6 @@
       line-height:1.45; flex-shrink:0;
     }
 
-    /* ══════════════════════════════ CHAT COMPONENTS ══════════════════════════════ */
     #micBtn {
       width:100%; height:74px; flex-shrink:0;
       background:linear-gradient(90deg,#111,#333); color:#fff;
@@ -236,7 +234,7 @@
     .msg.ai   .bubble { background:rgba(0,0,0,.86); color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.15); }
     .msg.user .bubble { background:#f2f2f0; color:#111; border:1px solid rgba(0,0,0,.1); }
 
-    /* ══════════════════════════════ REFERENCES PANEL ══════════════════════════════ */
+
     .refs-header {
       display:flex; align-items:center; justify-content:space-between;
       margin-bottom:10px; flex-shrink:0;
@@ -312,7 +310,6 @@
     }
     #addRefBtn:hover { opacity:.85; }
 
-    /* ══════════════════════════════ FOOTER ══════════════════════════════ */
     footer {
       height:34px; flex-shrink:0;
       background:#fff; border-top:1px solid rgba(0,0,0,.09);
@@ -320,7 +317,6 @@
       font-size:.76rem; color:#bbb;
     }
 
-    /* ══════════════════════════════ MODAL ══════════════════════════════ */
     .modal-bg {
       display:none; position:fixed; inset:0;
       background:rgba(0,0,0,.4); z-index:999;
@@ -342,7 +338,6 @@
 </head>
 <body>
 
-<!-- ══ NAV ══ -->
 <nav>
   <div class="nav-logo">
     <div class="nav-logo-icon">
@@ -366,14 +361,14 @@
   <button class="nav-btn" id="logoutBtn">Logout</button>
 </nav>
 
-<!-- ══ SHELL ══ -->
+
 <div class="shell">
   <div class="columns">
 
-    <!-- ════ COL 1: CONTROLS (20%) ════ -->
+
     <div class="col col-controls">
 
-      <!-- Toggle (top) -->
+
       <div class="sb-fixed">
         <button class="sb-toggle" id="modeToggleBtn">
           <i data-lucide="folder" class="icon"></i>
@@ -383,7 +378,7 @@
 
       <hr class="sb-hr">
 
-      <!-- Case Selection -->
+
       <div class="sb-case-block">
         <div class="sb-label">Case Selection</div>
         <div id="dropdownContainer">
@@ -403,35 +398,33 @@
 
       <hr class="sb-hr">
 
-      <!-- Push to Talk Toggle — above View Results -->
       <div class="sb-action">
         <button class="sb-btn light" id="pttToggleBtn">Push to Talk (Off)</button>
       </div>
 
       <hr class="sb-hr">
 
-      <!-- View Results -->
+
       <div class="sb-action">
         <button class="sb-btn dark" id="resultsBtn" disabled>View Results</button>
       </div>
 
       <hr class="sb-hr">
 
-      <!-- View History -->
+
       <div class="sb-action">
         <button class="sb-btn light" id="historyBtn">View History</button>
       </div>
 
       <hr class="sb-hr">
 
-      <!-- Reset Case -->
       <div class="sb-action">
         <button class="sb-btn light" id="resetBtn">Reset Case</button>
       </div>
 
     </div>
 
-    <!-- ════ COL 2: CHAT (55%) ════ -->
+
     <div class="col col-chat">
       <button id="micBtn" disabled>
         <i data-lucide="mic" class="icon"></i>
@@ -442,16 +435,15 @@
       </div>
     </div>
 
-    <!-- ════ COL 3: REFERENCES (25%) ════ -->
+
     <div class="col col-refs">
 
-      <!-- Tabs -->
+
       <div style="display:flex; gap:6px; margin-bottom:10px;">
         <button id="notesTabBtn" class="refs-tab active">My Notes</button>
         <button id="caseTabBtn" class="refs-tab">Case Files</button>
       </div>
 
-      <!-- AUTO CASE REFERENCES -->
       <div class="refs-auto">
         <div class="refs-auto-label">From Case File</div>
         <ul id="autoRefsList">
@@ -459,7 +451,7 @@
         </ul>
       </div>
 
-      <!-- STRUCTURED CASE DETAILS -->
+
       <div id="caseDetailsBox" style="
         background:#fff;
         border:1px solid rgba(0,0,0,.1);
@@ -491,7 +483,7 @@
         </ul>
       </div>
 
-      <!-- MANUAL NOTES -->
+
       <div class="refs-manual">
         <div class="refs-manual-label">My Notes</div>
         <div id="manualRefsList">
@@ -506,12 +498,12 @@
     </div>
   </div>
 
-  <!-- ══ FOOTER ══ -->
-  <footer>© 2025 PharmacyPrep | AI-Driven OSCE Training Platform</footer>
+
+  <footer>© 2026 PharmacyPrep | AI-Driven OSCE Training Platform</footer>
 
 </div>
 
-<!-- ══ INFO MODAL ══ -->
+
 <div class="modal-bg" id="infoModal">
   <div class="modal-box">
     <h2 style="margin-bottom:16px;">PharmacyPrep AI Patient Robot</h2>
@@ -527,7 +519,7 @@
   </div>
 </div>
 
-<!-- ══ HISTORY MODAL ══ -->
+
 <div class="modal-bg" id="historyModal">
   <div class="modal-box" style="max-width:700px; width:94%; max-height:82vh; display:flex; flex-direction:column;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-shrink:0;">
@@ -541,9 +533,7 @@
 
 
 <script>
-  /* ══════════════════════════════════════════════════════
-     ELEMENT REFS
-  ══════════════════════════════════════════════════════ */
+
   const fileInput         = document.getElementById('caseFile');
   const statusEl          = document.getElementById('status');
   const messages          = document.getElementById('messages');
@@ -559,41 +549,30 @@
   const addRefBtn         = document.getElementById('addRefBtn');
   const pttToggleBtn      = document.getElementById('pttToggleBtn');
 
-  /* ══════════════════════════════════════════════════════
-     STATE
-     Single-flag mode drives everything:
-       'idle'      – no session, button says Start
-       'starting'  – fetching greeting
-       'speaking'  – AI audio is playing
-       'listening' – auto-listen SR running
-       'hold'      – PTT mode, waiting for hold
-       'paused'    – session paused mid-conversation
-  ══════════════════════════════════════════════════════ */
-  let mode           = 'idle';
-  let autoRec        = null;   // SR instance for auto-listen mode
-  let pttRec         = null;   // fresh SR instance per PTT hold
-  let pttHeld        = false;  // true while mouse/touch is held
-  let currentAudio   = null;
-  let fileUploaded   = false;
-  let locked         = false;  // waiting for /ask response
-  let pttEnabled     = false;  // Push-to-Talk toggle
-  let transcriptHTML = '';
-  let caseResults    = null;
-  let useDefaultCases= true;
-  let manualRefs     = [];
-  let sessionHistory = [];
-  let currentCaseName= '';
-  let buffer         = '';
-  let silenceTimer   = null;
-  let loadToken      = 0;      // incremented on every load attempt; stale responses are ignored
-  let loadAbort      = null;   // AbortController for in-flight case load fetch
-  let pttDraining    = false;  // true during the drain window after PTT release
-  let lastTranscript = '';     // dedup — prevents same utterance firing sendQuestion twice
-  let autoSending    = false;  // guard — blocks any second send while first is processing
 
-  /* ══════════════════════════════════════════════════════
-     TABS
-  ══════════════════════════════════════════════════════ */
+  let mode            = 'idle';
+  let autoRec         = null;
+  let pttRec          = null;
+  let pttHeld         = false;
+  let currentAudio    = null;
+  let fileUploaded    = false;
+  let locked          = false;
+  let pttEnabled      = false;
+  let transcriptHTML  = '';
+  let caseResults     = null;
+  let useDefaultCases = true;
+  let manualRefs      = [];
+  let sessionHistory  = [];
+  let currentCaseName = '';
+  let buffer          = '';
+  let silenceTimer    = null;
+  let loadToken       = 0;
+  let loadAbort       = null;
+  let pttDraining     = false;
+  let lastTranscript  = '';
+  let autoSending     = false;
+
+
   const notesBtn = document.getElementById('notesTabBtn');
   const caseBtn  = document.getElementById('caseTabBtn');
   const caseBox  = document.getElementById('caseDetailsBox');
@@ -614,18 +593,15 @@
   notesBtn.addEventListener('click', activateNotes);
   caseBtn.addEventListener('click', activateCase);
 
-  /* ══════════════════════════════════════════════════════
-     MODALS
-  ══════════════════════════════════════════════════════ */
+
+
   document.getElementById('infoBtn').addEventListener('click', () => document.getElementById('infoModal').classList.add('open'));
   document.getElementById('modalClose').addEventListener('click', () => document.getElementById('infoModal').classList.remove('open'));
-  document.getElementById('logoutBtn').addEventListener('click', () => { if (confirm('Log out?')) window.location.href = '/logout'; });
+  document.getElementById('logoutBtn').addEventListener('click', () => { window.location.href = 'https://prepcourses.ai/'; });
   document.getElementById('historyBtn').addEventListener('click', () => { renderHistory(); document.getElementById('historyModal').classList.add('open'); });
   document.getElementById('historyClose').addEventListener('click', () => document.getElementById('historyModal').classList.remove('open'));
 
-  /* ══════════════════════════════════════════════════════
-     CASE DETAILS
-  ══════════════════════════════════════════════════════ */
+
   function populateCaseDetails(facts) {
     const content = document.getElementById('caseDetailsContent');
     if (!facts) return;
@@ -645,9 +621,6 @@
     content.innerHTML = `<ul style="list-style:disc;padding-left:16px;margin:0;line-height:1.5;color:#333;">${items.map(i => `<li style="margin-bottom:5px;">${i}</li>`).join('')}</ul>`;
   }
 
-  /* ══════════════════════════════════════════════════════
-     HISTORY
-  ══════════════════════════════════════════════════════ */
   function renderHistory() {
     const list = document.getElementById('historyList');
     const empty = document.getElementById('historyEmpty');
@@ -684,9 +657,6 @@
     return `<div style="margin-bottom:9px;"><div style="display:flex;justify-content:space-between;font-size:.82rem;font-weight:600;margin-bottom:3px;"><span>${label}</span><span style="color:#888">${pct}%</span></div><div style="background:#e5e5e3;border-radius:99px;height:7px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#111,#555);border-radius:99px;"></div></div></div>`;
   }
 
-  /* ══════════════════════════════════════════════════════
-     HELPERS
-  ══════════════════════════════════════════════════════ */
   function scrollToBottom() { messages.scrollTop = messages.scrollHeight; }
   function addBubble(sender, text) {
     const w = document.createElement('div'); w.className = 'msg ' + sender;
@@ -702,10 +672,7 @@
     ['caseCategory','caseList'].forEach(id => { document.getElementById(id).disabled = false; document.getElementById(id).style.opacity = ''; });
   }
 
-  /* ══════════════════════════════════════════════════════
-     MIC BUTTON VISUAL STATE  — one function, always consistent
-  ══════════════════════════════════════════════════════ */
-  // ── mic button helpers — exact same pattern as original working code ──
+
   function micIdle() {
     micBtn.disabled = false;
     micBtn.classList.remove('active','speaking','ptt-hold','ptt-recording');
@@ -750,7 +717,7 @@
     micBtn.style.background = '';
     micBtn.innerHTML = '<i data-lucide="mic" class="icon"></i> Hold to Speak';
     lucide.createIcons();
-    // Pre-open PTT WebSocket so it's ready the instant user presses
+
     warmPTTSocket();
   }
   function micRecording() {
@@ -781,16 +748,14 @@
     }
   }
 
-  /* ══════════════════════════════════════════════════════
-     STOP ALL AUDIO & RECOGNITION  — safe teardown helper
-  ══════════════════════════════════════════════════════ */
+
   function teardown() {
     clearTimeout(silenceTimer); silenceTimer = null;
     if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
-    // Close Deepgram auto-listen WebSocket + recorder
+
     if (dgRecorder) { try { dgRecorder.stop(); } catch(e){} dgRecorder = null; }
     if (autoRec)    { try { autoRec.close();   } catch(e){} autoRec    = null; }
-    // Close Deepgram PTT WebSocket + recorder
+
     if (pttRecorder)   { try { pttRecorder.stop();   } catch(e){} pttRecorder   = null; }
     if (pttSocket)     { try { pttSocket.close();     } catch(e){} pttSocket     = null; }
     if (pttRec)        { try { pttRec.close();        } catch(e){} pttRec        = null; }
@@ -802,20 +767,16 @@
     buffer         = '';
     lastTranscript = '';
     autoSending    = false;
-    autoRecId++;  // invalidate any in-flight WS callbacks
+    autoRecId++;
   }
 
-  /* ══════════════════════════════════════════════════════
-     DEEPGRAM STREAMING STT — shared helpers
-     Both auto-listen and PTT use the same WebSocket approach.
-     Audio is streamed in real-time via MediaRecorder → Deepgram WS.
-  ══════════════════════════════════════════════════════ */
-  let dgKey         = null;   // cached Deepgram API key from server
-  let dgStream      = null;   // MediaStream (microphone)
-  let dgSocket      = null;   // Deepgram WebSocket (auto-listen mode)
-  let dgRecorder    = null;   // MediaRecorder (auto-listen mode)
-  let pttSocket     = null;   // Deepgram WebSocket (PTT mode)
-  let pttRecorder   = null;   // MediaRecorder (PTT mode)
+
+  let dgKey       = null;
+  let dgStream    = null;
+  let dgSocket    = null;
+  let dgRecorder  = null;
+  let pttSocket   = null;
+  let pttRecorder = null;
 
   async function getDGKey() {
     if (dgKey) return dgKey;
@@ -849,16 +810,14 @@
       model:           'nova-3',
       language:        'en-US',
       smart_format:    'true',
-      interim_results: 'true',  // stream words as they're spoken
+      interim_results: 'true',
       punctuate:       'true',
     });
     return `wss://api.deepgram.com/v1/listen?${params}`;
   }
 
-  /* ══════════════════════════════════════════════════════
-     AUTO-LISTEN — Deepgram WebSocket
-  ══════════════════════════════════════════════════════ */
-  let autoRecId = 0;  // incremented each time; each WS checks its own ID before acting
+
+  let autoRecId = 0;
 
   async function createAutoRec() {
     const key    = await getDGKey();
@@ -866,13 +825,13 @@
     if (!key || !stream) return null;
 
     autoRecId++;
-    const myId = autoRecId;  // captured — this WS only acts if myId === autoRecId
+    const myId = autoRecId;
 
     const ws = new WebSocket(buildDGUrl(false), ['token', key]);
     ws.binaryType = 'arraybuffer';
 
     ws.onopen = () => {
-      if (myId !== autoRecId) { ws.close(); return; }  // stale — a newer WS took over
+      if (myId !== autoRecId) { ws.close(); return; }
       const mime = bestMimeType();
       const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
       recorder.ondataavailable = e => {
@@ -885,7 +844,6 @@
     };
 
     ws.onmessage = e => {
-      // Ignore if this socket has been superseded by a newer one
       if (myId !== autoRecId || mode !== 'listening' || locked || autoSending) return;
       try {
         const msg = JSON.parse(e.data);
@@ -904,7 +862,7 @@
           autoSending    = true;
           lastTranscript = q;
           sendQuestion(q).finally(() => { autoSending = false; });
-        }, 900);
+        }, 1800);
       } catch {}
     };
 
@@ -913,7 +871,7 @@
       if (dgRecorder && myId === autoRecId) {
         try { dgRecorder.stop(); } catch {} dgRecorder = null;
       }
-      // Only reconnect if this is still the active socket
+
       if (myId === autoRecId && mode === 'listening') {
         setTimeout(async () => {
           if (myId === autoRecId && mode === 'listening') {
@@ -926,14 +884,9 @@
     return ws;
   }
 
-  /* ══════════════════════════════════════════════════════
-     PLAY VOICE  (TTS)
-  ══════════════════════════════════════════════════════ */
   function playVoice(text) {
     mode = 'speaking';
     setMicUI('speaking');
-    // Keep Deepgram WS open during TTS — onmessage guard filters results while mode !== listening.
-    // Closing and reopening the WS would add unnecessary latency.
 
     fetch('/tts', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text}) })
       .then(r => r.json())
@@ -950,13 +903,13 @@
   function afterSpeaking() {
     currentAudio = null;
     locked = false;
-    micBtn.disabled = false;  // re-enable after speaking (was disabled during TTS)
-    // If session was interrupted (reset/results) while speaking, stay idle
+    micBtn.disabled = false;
+
     if (mode !== 'speaking') return;
     enterReadyState();
   }
 
-  /* ── After AI speaks, go to the right ready state ── */
+
   async function enterReadyState() {
     if (pttEnabled) {
       mode = 'hold';
@@ -968,14 +921,12 @@
     }
   }
 
-  /* ══════════════════════════════════════════════════════
-     SEND QUESTION  (/ask)
-  ══════════════════════════════════════════════════════ */
+
   async function sendQuestion(text) {
     const q = text.trim();
     if (!q || locked || !fileUploaded) return;
     locked = true;
-    buffer = '';           // clear immediately — prevents any stale timer from double-sending
+    buffer = '';
     clearTimeout(silenceTimer);
     addBubble('user', q);
     try {
@@ -991,15 +942,11 @@
     }
   }
 
-  /* ══════════════════════════════════════════════════════
-     SESSION CONTROL
-  ══════════════════════════════════════════════════════ */
   async function startSession() {
     mode = 'starting';
     setMicUI('starting');
     lockDropdowns();
 
-    // Pre-warm mic + DG key so PTT is instant when user first presses
     await getDGKey();
     await getMicStream();
 
@@ -1033,14 +980,9 @@
     if (fileUploaded) setMicUI('idle'); else setMicUI('disabled');
   }
 
-  /* ══════════════════════════════════════════════════════
-     MIC BUTTON  — click handler
-     PTT hold events are separate (mousedown/up) and only
-     fire when mode === 'hold'. The click event is suppressed
-     during hold via the pttHeld guard.
-  ══════════════════════════════════════════════════════ */
+
   micBtn.addEventListener('click', e => {
-    if (pttHeld) return;          // ignore click fired after mouseup
+    if (pttHeld) return;
     if (!fileUploaded) return;
 
     switch (mode) {
@@ -1048,14 +990,10 @@
       case 'paused':    resumeSession(); break;
       case 'listening': pauseSession();  break;
       case 'hold':      pauseSession();  break;
-      // 'starting', 'speaking', 'recording' — button is disabled or PTT-held, won't reach here
     }
   });
 
-  /* ══════════════════════════════════════════════════════
-     PTT  — hold to speak (mousedown / touchstart)
-     Only active when mode === 'hold'
-  ══════════════════════════════════════════════════════ */
+
   function onPTTDown(e) {
     if (mode !== 'hold' || locked) return;
     e.preventDefault();
@@ -1063,15 +1001,15 @@
     buffer = '';
     mode = 'recording';
     setMicUI('recording');
-    startPTTRec();  // async but fire-and-forget — pttHeld guard inside handles timing
+    startPTTRec();
   }
 
-  // Pre-warm PTT WebSocket so it's open and ready before user presses
+
   let pttWarmSocket = null;
 
   async function warmPTTSocket() {
-    if (pttWarmSocket && pttWarmSocket.readyState === WebSocket.OPEN) return; // already warm
-    const key    = await getDGKey();
+    if (pttWarmSocket && pttWarmSocket.readyState === WebSocket.OPEN) return;
+    const key = await getDGKey();
     if (!key) return;
     const ws = new WebSocket(buildDGUrl(true), ['token', key]);
     ws.binaryType = 'arraybuffer';
@@ -1079,7 +1017,6 @@
       if (!pttHeld && !pttDraining) return;
       try {
         const msg = JSON.parse(e.data);
-        // For PTT: only accumulate on is_final, no dedup needed (we control start/stop)
         if (msg.type === 'Results' && msg.is_final) {
           const t = msg.channel?.alternatives?.[0]?.transcript?.trim();
           if (t) buffer += ' ' + t;
@@ -1099,7 +1036,6 @@
     const stream = await getMicStream();
     if (!stream || !pttHeld) return;
 
-    // Use pre-warmed socket if available and open, else create fresh
     let ws = pttWarmSocket;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       const key = await getDGKey();
@@ -1121,18 +1057,17 @@
         if (pttRecorder) { try { pttRecorder.stop(); } catch {} pttRecorder = null; }
         pttWarmSocket = null;
       };
-      // Wait for it to open
+
       await new Promise(resolve => {
         ws.onopen = resolve;
-        setTimeout(resolve, 1000); // fallback
+        setTimeout(resolve, 1000);
       });
     }
-    pttWarmSocket = null; // consuming it
+    pttWarmSocket = null;
     pttRec = ws;
 
     if (!pttHeld) { ws.close(); return; }
 
-    // Start recording immediately — socket is already open
     const mime = bestMimeType();
     const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
     recorder.ondataavailable = e => {
@@ -1150,33 +1085,25 @@
     pttHeld = false;
     pttDraining = true;
 
-    // Lock button immediately
     micBtn.disabled = true;
     micBtn.classList.remove('ptt-recording','ptt-hold','active');
     micBtn.classList.add('speaking');
     micBtn.innerHTML = '<i data-lucide="volume-2" class="icon"></i> Processing...';
     lucide.createIcons();
 
-    // Stop the recorder first — this flushes the last audio chunk to Deepgram
     if (pttRecorder && pttRecorder.state !== 'inactive') {
       try { pttRecorder.stop(); } catch {}
     }
     pttRecorder = null;
 
-    // Wait 1500ms — Deepgram needs time to:
-    // 1. Receive the last audio chunk (up to 100ms chunk interval)
-    // 2. Process and transcribe it (~200-400ms)
-    // 3. Return the final result over the WebSocket (~100ms)
-    // Total safe window = 1500ms
     setTimeout(() => {
       if (pttRec) {
-        // Send KeepAlive close message so Deepgram finalizes cleanly
         try {
           if (pttRec.readyState === WebSocket.OPEN) {
             pttRec.send(JSON.stringify({ type: 'CloseStream' }));
           }
         } catch {}
-        // Then close after a short delay to catch the final transcript
+
         setTimeout(() => {
           try { pttRec.close(); } catch {}
           pttRec = null;
@@ -1206,39 +1133,28 @@
   micBtn.addEventListener('touchstart', onPTTDown, { passive: false });
   micBtn.addEventListener('mouseup',    onPTTUp);
   micBtn.addEventListener('touchend',   onPTTUp,   { passive: false });
-  // Safety: release if pointer leaves button while held
+
   document.addEventListener('mouseup',  () => { if (pttHeld) onPTTUp(null); });
 
-  /* ══════════════════════════════════════════════════════
-     PTT TOGGLE
-  ══════════════════════════════════════════════════════ */
+
   pttToggleBtn.addEventListener('click', () => {
     pttEnabled = !pttEnabled;
     pttToggleBtn.textContent = pttEnabled ? 'Push to Talk (On)' : 'Push to Talk (Off)';
 
-    // Seamlessly switch mode if mid-session
     if (mode === 'listening' && pttEnabled) {
-      // Switch from auto-listen → hold — close Deepgram WS
       if (dgRecorder) { try { dgRecorder.stop(); } catch {} dgRecorder = null; }
       if (autoRec)    { try { autoRec.close();   } catch {} autoRec    = null; }
       mode = 'hold';
       setMicUI('hold');
     } else if (mode === 'hold' && !pttEnabled) {
-      // Switch from hold → auto-listen
       mode = 'listening';
       setMicUI('listening');
       createAutoRec().then(ws => { autoRec = ws; });
     } else if (mode === 'paused') {
-      // Paused — no recognition running, nothing to switch. resumeSession will pick up correct mode.
-      // Just update the button text (already done above). Nothing else needed.
     }
-    // 'speaking': will pick up correct mode in afterSpeaking → enterReadyState
-    // 'recording': PTT in progress, don't interrupt
   });
 
-  /* ══════════════════════════════════════════════════════
-     REFERENCES — AUTO
-  ══════════════════════════════════════════════════════ */
+
   function setAutoRefs(refsText) {
     autoRefsList.innerHTML = '';
     const crl = document.getElementById('caseRefsList');
@@ -1255,9 +1171,6 @@
     });
   }
 
-  /* ══════════════════════════════════════════════════════
-     REFERENCES — MANUAL
-  ══════════════════════════════════════════════════════ */
   function renderManualRefs() {
     manualRefsList.innerHTML = '';
     if (!manualRefs.length) { manualRefsList.innerHTML = '<div class="ref-empty">No references added yet.</div>'; return; }
@@ -1277,9 +1190,6 @@
   addRefBtn.addEventListener('click', addManualRef);
   newRefInput.addEventListener('keydown', e => { if (e.key==='Enter') addManualRef(); });
 
-  /* ══════════════════════════════════════════════════════
-     MODE TOGGLE  (default cases vs upload)
-  ══════════════════════════════════════════════════════ */
   modeBtn.addEventListener('click', () => {
     useDefaultCases = !useDefaultCases;
     if (useDefaultCases) {
@@ -1294,9 +1204,7 @@
     lucide.createIcons();
   });
 
-  /* ══════════════════════════════════════════════════════
-     FILE UPLOAD
-  ══════════════════════════════════════════════════════ */
+
   fileInput.addEventListener('change', async e => {
     const file = e.target.files[0]; if (!file) return;
     statusEl.textContent = '🧠 Reading case…';
@@ -1313,19 +1221,17 @@
     } catch { statusEl.textContent = '❌ Upload failed.'; }
   });
 
-  /* ══════════════════════════════════════════════════════
-     RESULTS
-  ══════════════════════════════════════════════════════ */
+
   resultsBtn.addEventListener('click', async () => {
     if (!fileUploaded) return;
-    // Pause session first (stops audio/recognition)
+
     pauseSession();
-    // Then immediately grey out mic — MUST be after pauseSession since it re-enables the button
+
     micBtn.disabled = true;
     micBtn.classList.remove('active','speaking','ptt-hold','ptt-recording');
     micBtn.innerHTML = '<i data-lucide="mic" class="icon"></i> Start Pharmacy Session';
     lucide.createIcons();
-    // Always snapshot the current chat before switching to results view
+
     transcriptHTML = messages.innerHTML;
     messages.innerHTML = '';
     if (caseResults) { renderResults(caseResults); return; }
@@ -1378,23 +1284,20 @@
     document.getElementById('backBtn').addEventListener('click', () => {
       messages.innerHTML = transcriptHTML;
       scrollToBottom();
-      // Clear cached results so next View Results regenerates with the latest conversation
+
       caseResults = null;
-      // Resume the session so user can continue the conversation
+tion
       resumeSession();
     });
-    // Disable mic while on results screen
+
     micBtn.disabled = true;
     micBtn.classList.remove('active','speaking','ptt-hold','ptt-recording');
     micBtn.innerHTML = '<i data-lucide="mic" class="icon"></i> Start Pharmacy Session';
     lucide.createIcons();
   }
 
-  /* ══════════════════════════════════════════════════════
-     RESET CASE
-  ══════════════════════════════════════════════════════ */
+
   resetBtn.addEventListener('click', async () => {
-    // Abort any in-flight case load immediately — increment token to invalidate it
     if (loadAbort) { loadAbort.abort(); loadAbort = null; }
     loadToken++;
     fullStop();
@@ -1414,9 +1317,6 @@
     activateNotes();
   });
 
-  /* ══════════════════════════════════════════════════════
-     LOAD CHAPTERS
-  ══════════════════════════════════════════════════════ */
   async function loadChapters() {
     try {
       const res  = await fetch('/list-chapters');
@@ -1440,7 +1340,6 @@
     const file    = document.getElementById('caseList').value;
     if (!chapter || !file) return;
 
-    // Abort any previous in-flight load
     if (loadAbort) { loadAbort.abort(); loadAbort = null; }
     loadToken++;
     const myToken = loadToken;
@@ -1457,7 +1356,6 @@
       });
       const data = await res.json();
 
-      // If reset was clicked while loading, our token is stale — discard silently
       if (myToken !== loadToken) return;
 
       if (data.error) { statusEl.textContent='❌ '+data.error; addBubble('ai','❌ Failed: '+data.error); unlockDropdowns(); return; }
@@ -1466,17 +1364,14 @@
       setAutoRefs(data.references||''); populateCaseDetails(data.extracted||{}); activateCase();
       statusEl.textContent = '✅ Case loaded. AI is now the patient.';
       loadAbort = null;
-      // Dropdowns stay locked — only Reset Case unlocks them
+
     } catch(err) {
-      if (err.name === 'AbortError') return; // intentionally cancelled by reset
+      if (err.name === 'AbortError') return;
       if (myToken !== loadToken) return;
       statusEl.textContent='❌ Failed to load case.'; unlockDropdowns();
     }
   });
 
-  /* ══════════════════════════════════════════════════════
-     INIT
-  ══════════════════════════════════════════════════════ */
   addBubble('ai', 'Welcome! Select a case from the sidebar or upload your own to begin a pharmacy session.');
   lucide.createIcons();
 </script>
