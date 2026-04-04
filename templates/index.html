@@ -182,39 +182,40 @@
     .sb-btn.light:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.25); }
 
     .sb-btn:disabled { opacity:.4; cursor:not-allowed; transform:none !important; }
-        .session-timer {
+      .session-timer {
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:10px;
+      gap:14px;
       background:#fff;
-      border:1px solid rgba(0,0,0,.1);
-      border-radius:10px;
-      padding:10px 12px;
-      margin-bottom:10px;
-      box-shadow:0 1px 3px rgba(0,0,0,.03);
+      border:1px solid rgba(0,0,0,.12);
+      border-radius:14px;
+      padding:14px 16px;
+      margin-bottom:12px;
+      box-shadow:0 2px 8px rgba(0,0,0,.04);
       flex-shrink:0;
     }
 
     .session-timer-left {
       display:flex;
       flex-direction:column;
-      gap:2px;
+      gap:4px;
     }
 
     .session-timer-label {
-      font-size:.68rem;
+      font-size:.78rem;
       font-weight:700;
       text-transform:uppercase;
       letter-spacing:.08em;
-      color:#b0b0b0;
+      color:#a8a8a8;
     }
 
     .session-timer-time {
-      font-size:1.05rem;
+      font-size:2.2rem;
       font-weight:700;
-      letter-spacing:-.02em;
+      letter-spacing:-.03em;
       color:#111;
+      line-height:1;
       transition:color .2s ease;
     }
 
@@ -223,9 +224,9 @@
     }
 
     .timer-pause-btn {
-      width:34px;
-      height:34px;
-      border-radius:8px;
+      width:46px;
+      height:46px;
+      border-radius:11px;
       border:1px solid rgba(0,0,0,.12);
       background:#f7f7f5;
       color:#111;
@@ -491,7 +492,7 @@
     <div class="col col-chat">
       <button id="micBtn" disabled>
         <i data-lucide="mic" class="icon"></i>
-        Start Pharmacy Session
+        Start  OSCE Roleplay
       </button>
       <div class="chat-box">
         <div id="messages" class="messages"></div>
@@ -660,6 +661,7 @@
   let timerInterval      = null;
   let timerRunning       = false;
   let timerPaused        = false;
+  let timerExpired = false;
   let beepPlayed         = false;
   let beepFlashTimeout   = null;
   function activateNotes() {
@@ -981,6 +983,7 @@
     timerSeconds = 420;
     timerPaused = false;
     timerRunning = false;
+    timerExpired = false;
     beepPlayed = false;
     clearTimeout(beepFlashTimeout);
     sessionTimerEl.classList.remove('warning');
@@ -1032,6 +1035,7 @@
       }
 
       if (timerSeconds <= 0) {
+        timerExpired = true;
         stopTimer();
       }
     }, 1000);
@@ -1415,7 +1419,11 @@
     if (caseResults) { renderResults(caseResults); return; }
     addBubble('ai', 'Generating analysis...');
     try {
-      const res  = await fetch('/results');
+      const res = await fetch('/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timer_expired: timerExpired })
+      });
       const data = await res.json();
       if (data.error) { addBubble('ai','(Error) '+data.error); return; }
       caseResults = data;

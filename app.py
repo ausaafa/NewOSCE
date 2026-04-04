@@ -514,10 +514,11 @@ def serve_upload(filename):
 
 # -------------------- RESULTS --------------------
 
-@app.route("/results", methods=["GET"])
+@app.route("/results", methods=["POST"])
 def results():
     global case_context, patient_state
-
+    data_in = request.get_json(silent=True) or {}
+    timer_expired = bool(data_in.get("timer_expired"))
     turns = patient_state.get("turns", [])
 
     if not turns:
@@ -554,49 +555,91 @@ def results():
         role = "Pharmacist" if t["role"] == "user" else "Patient"
         transcript += f"{role}: {t['content']}\n"
 
+    data_in = request.get_json(silent=True) or {}
+    timer_expired = bool(data_in.get("timer_expired"))
+
     prompt = f"""
-You are a strict OSCE examiner. Each score MUST be different unless performance is genuinely identical.
-Scores should reflect real differences — a pharmacist who only asked one question should score very differently across categories.
+You are a strict pharmacy OSCE examiner grading this interaction using a clinically accurate checklist-based standard.
 
-LISTENING:
-0-10 = Said nothing, no questions at all
-11-20 = One very basic or closed question
-21-35 = Asked about the main concern but no follow-up
-36-50 = Some follow-up but missed key details
-51-65 = Good exploration of most concerns
-66-80 = Thorough questioning with good follow-up
-81-90 = Excellent active listening throughout
-91-100 = Outstanding — explored all concerns, clarified ambiguities, reflected back
+You must base your judgment ONLY on what the pharmacist explicitly said in the transcript.
+Do not give credit for things they likely knew but did not say.
+Be strict, realistic, and clinically grounded.
 
-EMPATHY:
-0-10 = No acknowledgement of patient emotions whatsoever
-11-20 = One word response, no warmth
-21-35 = Minimal warmth but no real validation
-36-50 = One generic empathetic phrase
-51-65 = Clear acknowledgement of patient feelings
-66-80 = Warm, validating language used consistently
-81-90 = Strong emotional support and reassurance
-91-100 = Exceptional empathy — patient clearly felt heard and supported
+CLINICAL CHECKLIST STANDARD
 
-COMMUNICATION:
-0-10 = No explanations given at all
-11-20 = One vague or confusing statement
-21-35 = Minimal information, poorly structured
-36-50 = Some information but incomplete or unclear
-51-65 = Reasonable explanation with gaps
-66-80 = Clear and organized explanations
-81-90 = Excellent clarity, logical structure, appropriate language
-91-100 = Outstanding communication — thorough, clear, patient-centered
+COMMUNICATION SKILLS
+Assess these four domains:
 
-PROBLEM SOLVING:
-0-10 = No advice, no plan, no clinical information provided
-11-20 = Acknowledged the problem but gave no guidance
-21-35 = Very vague suggestion without any real plan
-36-50 = Partial plan mentioned but missing key elements
-51-65 = Reasonable plan but incomplete
-66-80 = Appropriate and safe clinical plan discussed
-81-90 = Clear, complete, patient-centered plan with follow-up
-91-100 = Outstanding — comprehensive plan, safety considerations, follow-up, alternatives discussed
+1. Opening Statement / Initial Engagement
+- Responded appropriately to the patient cue
+- Started professionally
+- Did not interrupt unnecessarily
+- Built rapport and engagement
+
+2. Information Gathering
+- Asked relevant questions for the case
+- Explored allergies, medication history, medical conditions
+- Explored relevant lifestyle/context factors when appropriate
+- Built confidence and trust through organized questioning
+
+3. Discussion / Follow-up / Monitoring
+- Addressed follow-up steps, monitoring, warning signs, or when to seek further care
+- Closed loops appropriately
+
+4. References and Time Management
+- Demonstrated appropriate use of references if relevant
+- Prioritized information appropriately
+- Managed station time effectively
+
+Use these communication rating anchors:
+- Acceptable 4/4
+- Marginally Acceptable 3/4
+- Marginally Unacceptable 2/4
+- Unacceptable 1/4 or 0/4
+
+PROBLEM SOLVING
+Judge how well the pharmacist solved the counseling task:
+- Fully Solved 4/4 = all key points covered
+- Marginally Solved 3/4 = three key points covered
+- Marginally Unsolved 2/4 = two key points covered
+- Unsolved 1/4 or 0/4 = improper recommendation, unsafe recommendation, or major missing key points
+
+SAFETY
+Also judge:
+- misinformation: true if the pharmacist gave clinically incorrect, misleading, or inappropriate information
+- patient_risk: true if advice or omissions could put the patient at risk
+
+OVERALL PERFORMANCE
+Use this scale:
+- Superior = 8
+- Good = 7-6
+- Fair = 5-4
+- Need to improve = 3-0
+
+TIME MANAGEMENT
+If TIMER_EXPIRED is true, the pharmacist went beyond the 7-minute station time.
+Do not automatically fail them for time alone.
+However, mention inefficient prioritization or time management in weaknesses if justified.
+
+IMPORTANT SCORING INSTRUCTION
+You must still return the following 0-100 fields for the existing frontend:
+- listening
+- empathy
+- communication
+- problem_solving
+
+Map them clinically:
+- listening = quality of information gathering and active listening
+- empathy = rapport, warmth, and patient-centeredness
+- communication = opening, clarity, structure, follow-up, and time management
+- problem_solving = task completion, appropriateness of recommendations, and safety
+
+Use these principles:
+- Strong communication but weak counseling should produce a clear gap
+- Good empathy should not rescue poor clinical reasoning
+- Unsafe or misleading advice should significantly lower problem_solving
+- Missing allergies/med history/relevant questioning should lower listening and communication
+- Going over time should mainly affect communication/time-management comments, and modestly affect communication when justified
 
 CASE CONTEXT:
 {case_context['summary']}
@@ -604,12 +647,11 @@ CASE CONTEXT:
 TRANSCRIPT:
 {transcript}
 
-Read the transcript carefully. Base every score ONLY on what the pharmacist explicitly said.
-Scores must vary — if problem solving was weak but listening was decent, reflect that gap clearly.
+TIMER_EXPIRED: {timer_expired}
 
 Return ONLY valid JSON with:
-- good (list of exactly 2 specific strengths shown by the PHARMACIST only)
-- improvement (list of exactly 2 specific weaknesses of the PHARMACIST only)
+- good (list of exactly 2 specific strengths shown by the pharmacist)
+- improvement (list of exactly 2 specific weaknesses shown by the pharmacist)
 - listening (integer 0-100)
 - empathy (integer 0-100)
 - communication (integer 0-100)
